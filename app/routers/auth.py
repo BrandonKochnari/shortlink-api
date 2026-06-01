@@ -16,11 +16,6 @@ from app.schemas import (
     UserResponse,
     Token
 )
-from app.services.security import (
-    hash_password,
-    verify_password,
-    create_access_token
-)
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/api/v1/auth/login"
