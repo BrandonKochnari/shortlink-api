@@ -8,6 +8,12 @@ class URLCreate(BaseModel):
     expires_at: datetime | None = None
 
 
+class URLUpdate(BaseModel):
+    original_url: HttpUrl | None = None
+    expires_at: datetime | None = None
+    is_active: bool | None = None
+
+
 class URLResponse(BaseModel):
     id: int
     original_url: str
