@@ -38,3 +38,11 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class URLAnalytics(BaseModel):
+    short_code: str
+    original_url: str
+    clicks: int
+    created_at: datetime
+    last_clicked: datetime | None = None
+    is_active: bool

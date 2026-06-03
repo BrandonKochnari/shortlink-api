@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas import URLCreate, URLResponse
+from app.schemas import URLCreate, URLResponse, URLAnalytics
 from app.services.url_service import create_short_url, get_urls_for_user, get_url_by_short_code
 from app.routers.auth import get_current_user
 from app.models import User, Click
@@ -21,12 +21,12 @@ def create_url(url_data: URLCreate, db: Session = Depends(get_db), current_user:
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
     
-@router.get("/{short_code}/analytics")
+@router.get("/{short_code}/analytics", response_model=URLAnalytics)
 def get_url_analytics(short_code: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     url = get_url_by_short_code(db, short_code)
 
     if not url: 
-        raise HTTPException(status_code=404, detail="URL not found")
+        raise HTTPException(status_code=404, detail="URL Not Found")
     
     if url.user_id != current_user.id: 
         raise HTTPException(status_code=403, detail="Invalid Access")
@@ -37,8 +37,52 @@ def get_url_analytics(short_code: str, db: Session = Depends(get_db), current_us
         .count()
     )
 
+    last_click = (
+        db.query(Click)
+        .filter(Click.url_id == url.id)
+        .order_by(Click.clicked_at.desc())
+        .first()
+    )
+
     return {
         "short_code": url.short_code,
         "original_url": url.original_url,
-        "clicks": click_count
+        "clicks": click_count,
+        "created_at": url.created_at,
+        "last_clicked": last_click.clicked_at if last_click else None,
+        "is_active": url.is_active
     }
+
+@router.patch("/{short_code}/deactivate")
+def deactivate_url(short_code: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    url = get_url_by_short_code(db, short_code)
+    
+    if not url: 
+        raise HTTPException(status_code=404, detail="URL Not Found")
+    
+    if url.user_id != current_user.id: 
+        raise HTTPException(status_code=403, detail="Invalid Access")
+    
+    url.is_active = False
+
+    db.commit()
+    db.refresh(url)
+
+    return {"message": "URL Deactivated", "short_code": url.short_code}
+
+@router.patch("/{short_code}/activate")
+def activate_url(short_code: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    url = get_url_by_short_code(db, short_code)
+    
+    if not url: 
+        raise HTTPException(status_code=404, detail="URL Not Found")
+    
+    if url.user_id != current_user.id: 
+        raise HTTPException(status_code=403, detail="Invalid Access")
+    
+    url.is_active = True
+
+    db.commit()
+    db.refresh(url)
+
+    return {"message": "URL Activated", "short_code": url.short_code}
