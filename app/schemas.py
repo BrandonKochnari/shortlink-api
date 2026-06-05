@@ -46,3 +46,8 @@ class URLAnalytics(BaseModel):
     created_at: datetime
     last_clicked: datetime | None = None
     is_active: bool
+    expires_at: datetime | None = None
+    is_expired: bool
+
+class URLUpdate(BaseModel):
+    expires_at: datetime | None = None

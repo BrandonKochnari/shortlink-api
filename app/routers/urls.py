@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas import URLCreate, URLResponse, URLAnalytics
+from app.schemas import URLCreate, URLResponse, URLAnalytics, URLUpdate
 from app.services.url_service import create_short_url, get_urls_for_user, get_url_by_short_code
 from app.routers.auth import get_current_user
 from app.models import User, Click
+from datetime import datetime
 
 router = APIRouter()
 
@@ -50,7 +51,9 @@ def get_url_analytics(short_code: str, db: Session = Depends(get_db), current_us
         "clicks": click_count,
         "created_at": url.created_at,
         "last_clicked": last_click.clicked_at if last_click else None,
-        "is_active": url.is_active
+        "is_active": url.is_active,
+        "is_expired": (url.expires_at is not None and url.expires_at < datetime.utcnow()),
+        "expires_at": url.expires_at
     }
 
 @router.patch("/{short_code}/deactivate")
@@ -86,3 +89,36 @@ def activate_url(short_code: str, db: Session = Depends(get_db), current_user: U
     db.refresh(url)
 
     return {"message": "URL Activated", "short_code": url.short_code}
+
+@router.delete("/{short_code}")
+def delete_url(short_code: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    url = get_url_by_short_code(db, short_code)
+    
+    if not url: 
+        raise HTTPException(status_code=404, detail="URL Not Found")
+    
+    if url.user_id != current_user.id: 
+        raise HTTPException(status_code=403, detail="Invalid Access")
+    
+    db.delete(url)
+    db.commit()
+
+    return {"message": "URL Deleted"}
+
+@router.patch("/{short_code}/expiration")
+def update_expiration(short_code: str, update_data: URLUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    url = get_url_by_short_code(db, short_code)
+    
+    if not url: 
+        raise HTTPException(status_code=404, detail="URL Not Found")
+    
+    if url.user_id != current_user.id: 
+        raise HTTPException(status_code=403, detail="Invalid Access")
+    
+    url.expires_at = update_data.expires_at
+
+    db.commit()
+    db.refresh(url)
+
+    return {"message": "URL Expiry Updated", "expires_at": url.expires_at}
+    
