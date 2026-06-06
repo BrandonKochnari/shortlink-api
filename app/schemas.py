@@ -8,12 +8,6 @@ class URLCreate(BaseModel):
     expires_at: datetime | None = None
 
 
-class URLUpdate(BaseModel):
-    original_url: HttpUrl | None = None
-    expires_at: datetime | None = None
-    is_active: bool | None = None
-
-
 class URLResponse(BaseModel):
     id: int
     original_url: str
@@ -44,3 +38,16 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class URLAnalytics(BaseModel):
+    short_code: str
+    original_url: str
+    clicks: int
+    created_at: datetime
+    last_clicked: datetime | None = None
+    is_active: bool
+    expires_at: datetime | None = None
+    is_expired: bool
+
+class URLUpdate(BaseModel):
+    expires_at: datetime | None = None
