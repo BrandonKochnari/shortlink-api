@@ -6,7 +6,11 @@ from datetime import datetime, timezone
 from app import models
 from app.database import Base, engine, get_db
 from app.routers import urls, auth
-from app.services.url_service import get_url_by_short_code, record_click
+from app.services.url_service import (
+    get_active_url_by_short_code,
+    is_url_expired,
+    record_click,
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -26,26 +30,20 @@ def root():
 
 @app.get("/{short_code}")
 def redirect_to_original_url(short_code: str, db: Session = Depends(get_db)):
-    url = get_url_by_short_code(db, short_code)
+    url = get_active_url_by_short_code(db, short_code)
 
     if not url:
         raise HTTPException(
             status_code=404,
-            detail="URL Not Found"
+            detail="Short URL not found"
         )
-    
-    if not url.is_active:
+
+    if is_url_expired(url):
         raise HTTPException(
             status_code=410,
-            detail="URL Is Inactive"
+            detail="Short URL has expired"
         )
-    
-    if url.expires_at and url.expires_at < datetime.utcnow():
-        raise HTTPException(
-            status_code=410,
-            detail="URL Has Expired"
-        )
-    
+
     record_click(db, url)
 
     return RedirectResponse(url.original_url)

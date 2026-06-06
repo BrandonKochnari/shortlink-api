@@ -2,13 +2,28 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas import URLCreate, URLResponse, URLAnalytics, URLUpdate
-from app.services.url_service import create_short_url, get_urls_for_user, get_url_by_short_code
+from app.schemas import URLCreate, URLResponse, URLUpdate
+from app.services.url_service import (
+    build_url_response,
+    create_short_url,
+    deactivate_url,
+    get_all_urls,
+    get_url_by_id,
+    get_url_by_short_code,
+    get_urls_for_user,
+    update_url,
+)
 from app.routers.auth import get_current_user
 from app.models import User, Click
 from datetime import datetime
 
 router = APIRouter()
+
+@router.get("/", response_model=list[URLResponse])
+def list_urls(db: Session = Depends(get_db)):
+    urls = get_all_urls(db)
+    return [build_url_response(url) for url in urls]
+
 
 @router.get("/my-urls", response_model=list[URLResponse])
 def get_my_urls(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -21,8 +36,39 @@ def create_url(url_data: URLCreate, db: Session = Depends(get_db), current_user:
         return create_short_url(db, url_data, current_user)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
-    
-@router.get("/{short_code}/analytics", response_model=URLAnalytics)
+
+
+@router.get("/{url_id}", response_model=URLResponse)
+def read_url(url_id: int, db: Session = Depends(get_db)):
+    url = get_url_by_id(db, url_id)
+
+    if url is None:
+        raise HTTPException(status_code=404, detail="URL not found")
+
+    return build_url_response(url)
+
+
+@router.patch("/{url_id}", response_model=URLResponse)
+def patch_url(url_id: int, url_data: URLUpdate, db: Session = Depends(get_db)):
+    url = update_url(db, url_id, url_data)
+
+    if url is None:
+        raise HTTPException(status_code=404, detail="URL not found")
+
+    return build_url_response(url)
+
+
+@router.delete("/{url_id}")
+def delete_url(url_id: int, db: Session = Depends(get_db)):
+    url = deactivate_url(db, url_id)
+
+    if url is None:
+        raise HTTPException(status_code=404, detail="URL not found")
+
+    return {"message": "URL deactivated successfully"}
+
+
+@router.get("/{short_code}/analytics")
 def get_url_analytics(short_code: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     url = get_url_by_short_code(db, short_code)
 
@@ -48,77 +94,5 @@ def get_url_analytics(short_code: str, db: Session = Depends(get_db), current_us
     return {
         "short_code": url.short_code,
         "original_url": url.original_url,
-        "clicks": click_count,
-        "created_at": url.created_at,
-        "last_clicked": last_click.clicked_at if last_click else None,
-        "is_active": url.is_active,
-        "is_expired": (url.expires_at is not None and url.expires_at < datetime.utcnow()),
-        "expires_at": url.expires_at
+        "clicks": click_count
     }
-
-@router.patch("/{short_code}/deactivate")
-def deactivate_url(short_code: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    url = get_url_by_short_code(db, short_code)
-    
-    if not url: 
-        raise HTTPException(status_code=404, detail="URL Not Found")
-    
-    if url.user_id != current_user.id: 
-        raise HTTPException(status_code=403, detail="Invalid Access")
-    
-    url.is_active = False
-
-    db.commit()
-    db.refresh(url)
-
-    return {"message": "URL Deactivated", "short_code": url.short_code}
-
-@router.patch("/{short_code}/activate")
-def activate_url(short_code: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    url = get_url_by_short_code(db, short_code)
-    
-    if not url: 
-        raise HTTPException(status_code=404, detail="URL Not Found")
-    
-    if url.user_id != current_user.id: 
-        raise HTTPException(status_code=403, detail="Invalid Access")
-    
-    url.is_active = True
-
-    db.commit()
-    db.refresh(url)
-
-    return {"message": "URL Activated", "short_code": url.short_code}
-
-@router.delete("/{short_code}")
-def delete_url(short_code: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    url = get_url_by_short_code(db, short_code)
-    
-    if not url: 
-        raise HTTPException(status_code=404, detail="URL Not Found")
-    
-    if url.user_id != current_user.id: 
-        raise HTTPException(status_code=403, detail="Invalid Access")
-    
-    db.delete(url)
-    db.commit()
-
-    return {"message": "URL Deleted"}
-
-@router.patch("/{short_code}/expiration")
-def update_expiration(short_code: str, update_data: URLUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    url = get_url_by_short_code(db, short_code)
-    
-    if not url: 
-        raise HTTPException(status_code=404, detail="URL Not Found")
-    
-    if url.user_id != current_user.id: 
-        raise HTTPException(status_code=403, detail="Invalid Access")
-    
-    url.expires_at = update_data.expires_at
-
-    db.commit()
-    db.refresh(url)
-
-    return {"message": "URL Expiry Updated", "expires_at": url.expires_at}
-    
