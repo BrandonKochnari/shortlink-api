@@ -37,7 +37,7 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(
             status_code=400,
-            detail="Email alredy registered"
+            detail="Email Already Registered"
         )
     hashed_password = hash_password(user_data.password)
     user = User(
@@ -93,7 +93,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user_id is None:
         raise HTTPException(
             status_code=401,
-            detail="Invalid token"
+            detail="Invalid Token"
         )
 
     user = (
@@ -105,7 +105,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if not user:
         raise HTTPException(
             status_code=401,
-            detail="User not found"
+            detail="User Not Found"
         )
 
     return user

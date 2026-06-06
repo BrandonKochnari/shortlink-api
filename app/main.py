@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone
 
 from app import models
 from app.database import Base, engine, get_db
@@ -25,7 +26,7 @@ app.include_router(
 @app.get("/")
 
 def root():
-    return {"message": "Shortlink API is running"}
+    return {"message": "Shortlink API Is Running"}
 
 @app.get("/{short_code}")
 def redirect_to_original_url(short_code: str, db: Session = Depends(get_db)):

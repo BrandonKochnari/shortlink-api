@@ -15,6 +15,7 @@ from app.services.url_service import (
 )
 from app.routers.auth import get_current_user
 from app.models import User, Click
+from datetime import datetime
 
 router = APIRouter()
 
@@ -72,7 +73,7 @@ def get_url_analytics(short_code: str, db: Session = Depends(get_db), current_us
     url = get_url_by_short_code(db, short_code)
 
     if not url: 
-        raise HTTPException(status_code=404, detail="URL not found")
+        raise HTTPException(status_code=404, detail="URL Not Found")
     
     if url.user_id != current_user.id: 
         raise HTTPException(status_code=403, detail="Invalid Access")
@@ -81,6 +82,13 @@ def get_url_analytics(short_code: str, db: Session = Depends(get_db), current_us
         db.query(Click)
         .filter(Click.url_id == url.id)
         .count()
+    )
+
+    last_click = (
+        db.query(Click)
+        .filter(Click.url_id == url.id)
+        .order_by(Click.clicked_at.desc())
+        .first()
     )
 
     return {
