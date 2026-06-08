@@ -257,3 +257,149 @@ def test_activate_url_allows_redirect_again(client: TestClient):
 
     assert redirect_response.status_code in [307, 308]
     assert redirect_response.headers["location"] == "https://example.com/"
+
+
+def test_create_url_requires_auth(client: TestClient):
+    response = client.post(
+        "/api/v1/urls/",
+        json={
+            "original_url": "https://example.com",
+            "custom_alias": None,
+            "expires_at": None,
+        },
+    )
+
+    assert response.status_code == 401
+
+
+def test_user_cannot_view_other_users_analytics(client: TestClient):
+    user_a_headers = auth_headers(client)
+    alias = unique_alias("other-analytics")
+
+    create_response = create_url(client, user_a_headers, custom_alias=alias)
+    assert create_response.status_code == 200
+
+    user_b_headers = auth_headers(client)
+    analytics_response = client.get(
+        f"/api/v1/urls/{alias}/analytics",
+        headers=user_b_headers,
+    )
+
+    assert analytics_response.status_code == 403
+    assert analytics_response.json()["detail"] == "Invalid Access"
+
+
+def test_user_cannot_deactivate_other_users_url(client: TestClient):
+    user_a_headers = auth_headers(client)
+    alias = unique_alias("other-deactivate")
+
+    create_response = create_url(client, user_a_headers, custom_alias=alias)
+    assert create_response.status_code == 200
+
+    user_b_headers = auth_headers(client)
+    deactivate_response = client.patch(
+        f"/api/v1/urls/{alias}/deactivate",
+        headers=user_b_headers,
+    )
+
+    assert deactivate_response.status_code == 403
+    assert deactivate_response.json()["detail"] == "Invalid Access"
+
+
+def test_user_cannot_delete_other_users_url(client: TestClient):
+    user_a_headers = auth_headers(client)
+    alias = unique_alias("other-delete")
+
+    create_response = create_url(client, user_a_headers, custom_alias=alias)
+    assert create_response.status_code == 200
+
+    user_b_headers = auth_headers(client)
+    delete_response = client.delete(
+        f"/api/v1/urls/{alias}",
+        headers=user_b_headers,
+    )
+
+    assert delete_response.status_code == 403
+    assert delete_response.json()["detail"] == "Invalid Access"
+
+
+def test_update_url_expiration(client: TestClient):
+    headers = auth_headers(client)
+    alias = unique_alias("expiration-update")
+
+    create_response = create_url(client, headers, custom_alias=alias)
+    assert create_response.status_code == 200
+
+    update_response = client.patch(
+        f"/api/v1/urls/{alias}/expiration",
+        headers=headers,
+        json={"expires_at": "2030-01-01T00:00:00"},
+    )
+
+    assert update_response.status_code == 200
+    data = update_response.json()
+    assert data["message"] == "URL Expiry Updated"
+    assert data["expires_at"].startswith("2030-01-01T00:00:00")
+
+
+def test_updating_expiration_to_past_blocks_redirect(client: TestClient):
+    headers = auth_headers(client)
+    alias = unique_alias("expiration-block")
+
+    create_response = create_url(client, headers, custom_alias=alias)
+    assert create_response.status_code == 200
+
+    initial_redirect_response = client.get(f"/{alias}", follow_redirects=False)
+    assert initial_redirect_response.status_code in [307, 308]
+
+    update_response = client.patch(
+        f"/api/v1/urls/{alias}/expiration",
+        headers=headers,
+        json={"expires_at": "2020-01-01T00:00:00"},
+    )
+    assert update_response.status_code == 200
+
+    redirect_response = client.get(f"/{alias}", follow_redirects=False)
+
+    assert redirect_response.status_code == 410
+    assert redirect_response.json()["detail"] == "URL Has Expired"
+
+
+def test_delete_url_removes_short_code(client: TestClient):
+    headers = auth_headers(client)
+    alias = unique_alias("delete-url")
+
+    create_response = create_url(client, headers, custom_alias=alias)
+    assert create_response.status_code == 200
+
+    delete_response = client.delete(
+        f"/api/v1/urls/{alias}",
+        headers=headers,
+    )
+
+    assert delete_response.status_code == 200
+    assert delete_response.json() == {"message": "URL Deleted"}
+
+    redirect_response = client.get(f"/{alias}", follow_redirects=False)
+
+    assert redirect_response.status_code == 404
+    assert redirect_response.json()["detail"] == "URL Not Found"
+
+
+def test_my_urls_does_not_include_other_users_urls(client: TestClient):
+    user_a_headers = auth_headers(client)
+    alias_a = unique_alias("user-a")
+    create_a_response = create_url(client, user_a_headers, custom_alias=alias_a)
+    assert create_a_response.status_code == 200
+
+    user_b_headers = auth_headers(client)
+    alias_b = unique_alias("user-b")
+    create_b_response = create_url(client, user_b_headers, custom_alias=alias_b)
+    assert create_b_response.status_code == 200
+
+    my_urls_response = client.get("/api/v1/urls/my-urls", headers=user_a_headers)
+
+    assert my_urls_response.status_code == 200
+    short_codes = {url["short_code"] for url in my_urls_response.json()}
+    assert alias_a in short_codes
+    assert alias_b not in short_codes
