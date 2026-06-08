@@ -10,17 +10,18 @@ from sqlalchemy.orm import sessionmaker
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
-os.environ["DATABASE_URL"] = f"sqlite:///{Path(__file__).resolve().parent / 'test_shortlink.db'}"
+if "DATABASE_URL" not in os.environ:
+    os.environ["DATABASE_URL"] = f"sqlite:///{Path(__file__).resolve().parent / 'test_shortlink.db'}"
 
 from app.database import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
 
 
 TEST_DATABASE_URL = os.environ["DATABASE_URL"]
-engine = create_engine(
-    TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-)
+engine_kwargs = {}
+if TEST_DATABASE_URL.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+engine = create_engine(TEST_DATABASE_URL, **engine_kwargs)
 TestingSessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
@@ -68,7 +69,7 @@ def auth_headers(client: TestClient) -> dict[str, str]:
 
     login_response = client.post(
         "/api/v1/auth/login",
-        data={"username": email, "password": password},
+        json={"email": email, "password": password},
     )
     assert login_response.status_code == 200
 
@@ -132,7 +133,7 @@ def test_duplicate_custom_alias_rejected(client: TestClient):
 
     assert first.status_code == 200
     assert second.status_code == 400
-    assert second.json()["detail"] == "Custom alias already exists"
+    assert second.json()["detail"] == "Custom Alias Already Exists"
 
 
 def test_redirect_short_url(client: TestClient):
@@ -155,7 +156,7 @@ def test_missing_short_code_returns_404(client: TestClient):
     response = client.get(f"/{alias}", follow_redirects=False)
 
     assert response.status_code == 404
-    assert response.json()["detail"] == "Short URL not found"
+    assert response.json()["detail"] == "URL Not Found"
 
 
 def test_expired_url_returns_410(client: TestClient):
@@ -174,69 +175,85 @@ def test_expired_url_returns_410(client: TestClient):
     redirect_response = client.get(f"/{alias}", follow_redirects=False)
 
     assert redirect_response.status_code == 410
-    assert redirect_response.json()["detail"] == "Short URL has expired"
+    assert redirect_response.json()["detail"] == "URL Has Expired"
 
+def test_my_urls_returns_authenticated_users_urls(client: TestClient):
+    headers = auth_headers(client)
+    alias = unique_alias("my-urls")
 
-def test_list_urls(client: TestClient):
-    response = client.get("/api/v1/urls/")
+    create_response = create_url(client, headers, custom_alias=alias)
+    assert create_response.status_code == 200
+
+    response = client.get("/api/v1/urls/my-urls", headers=headers)
 
     assert response.status_code == 200
-    assert isinstance(response.json(), list)
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 1
+    assert data[0]["short_code"] == alias
 
-
-def test_get_url_by_id(client: TestClient):
+def test_analytics_returns_click_count(client: TestClient):
     headers = auth_headers(client)
-    alias = unique_alias("read-one")
+    alias = unique_alias("analytics")
 
     create_response = create_url(client, headers, custom_alias=alias)
-
     assert create_response.status_code == 200
-    created = create_response.json()
 
-    read_response = client.get(f"/api/v1/urls/{created['id']}")
+    redirect_response = client.get(f"/{alias}", follow_redirects=False)
+    assert redirect_response.status_code in [307, 308]
 
-    assert read_response.status_code == 200
-    data = read_response.json()
-    assert data["id"] == created["id"]
-    assert data["short_code"] == alias
-
-
-def test_patch_url(client: TestClient):
-    headers = auth_headers(client)
-    alias = unique_alias("patch")
-
-    create_response = create_url(client, headers, custom_alias=alias)
-
-    assert create_response.status_code == 200
-    created = create_response.json()
-
-    patch_response = client.patch(
-        f"/api/v1/urls/{created['id']}",
-        json={
-            "original_url": "https://docs.python.org/3/",
-            "is_active": True,
-        },
+    analytics_response = client.get(
+        f"/api/v1/urls/{alias}/analytics",
+        headers=headers,
     )
 
-    assert patch_response.status_code == 200
-    data = patch_response.json()
-    assert data["original_url"] == "https://docs.python.org/3/"
+    assert analytics_response.status_code == 200
+    data = analytics_response.json()
+    assert data["short_code"] == alias
+    assert data["clicks"] == 1
+    assert data["last_clicked"] is not None
 
 
-def test_delete_deactivates_url(client: TestClient):
+def test_deactivate_url_blocks_redirect(client: TestClient):
     headers = auth_headers(client)
-    alias = unique_alias("delete")
+    alias = unique_alias("deactivate")
 
     create_response = create_url(client, headers, custom_alias=alias)
-
     assert create_response.status_code == 200
-    created = create_response.json()
 
-    delete_response = client.delete(f"/api/v1/urls/{created['id']}")
+    deactivate_response = client.patch(
+        f"/api/v1/urls/{alias}/deactivate",
+        headers=headers,
+    )
 
-    assert delete_response.status_code == 200
-    assert delete_response.json()["message"] == "URL deactivated successfully"
+    assert deactivate_response.status_code == 200
 
     redirect_response = client.get(f"/{alias}", follow_redirects=False)
 
-    assert redirect_response.status_code == 404
+    assert redirect_response.status_code == 410
+    assert redirect_response.json()["detail"] == "URL Is Inactive"
+
+
+def test_activate_url_allows_redirect_again(client: TestClient):
+    headers = auth_headers(client)
+    alias = unique_alias("activate")
+
+    create_response = create_url(client, headers, custom_alias=alias)
+    assert create_response.status_code == 200
+
+    deactivate_response = client.patch(
+        f"/api/v1/urls/{alias}/deactivate",
+        headers=headers,
+    )
+    assert deactivate_response.status_code == 200
+
+    activate_response = client.patch(
+        f"/api/v1/urls/{alias}/activate",
+        headers=headers,
+    )
+    assert activate_response.status_code == 200
+
+    redirect_response = client.get(f"/{alias}", follow_redirects=False)
+
+    assert redirect_response.status_code in [307, 308]
+    assert redirect_response.headers["location"] == "https://example.com/"
