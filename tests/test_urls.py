@@ -10,17 +10,18 @@ from sqlalchemy.orm import sessionmaker
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
-os.environ["DATABASE_URL"] = f"sqlite:///{Path(__file__).resolve().parent / 'test_shortlink.db'}"
+if "DATABASE_URL" not in os.environ:
+    os.environ["DATABASE_URL"] = f"sqlite:///{Path(__file__).resolve().parent / 'test_shortlink.db'}"
 
 from app.database import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
 
 
 TEST_DATABASE_URL = os.environ["DATABASE_URL"]
-engine = create_engine(
-    TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-)
+engine_kwargs = {}
+if TEST_DATABASE_URL.startswith("sqlite"):
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+engine = create_engine(TEST_DATABASE_URL, **engine_kwargs)
 TestingSessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
