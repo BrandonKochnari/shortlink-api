@@ -3,10 +3,14 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas import URLCreate, URLResponse, URLAnalytics, URLUpdate
-from app.services.url_service import create_short_url, get_urls_for_user, get_url_by_short_code
+from app.services.url_service import (
+    create_short_url,
+    get_url_by_short_code,
+    get_urls_for_user,
+    is_url_expired,
+)
 from app.routers.auth import get_current_user
 from app.models import User, Click
-from datetime import datetime
 
 router = APIRouter()
 
@@ -52,7 +56,7 @@ def get_url_analytics(short_code: str, db: Session = Depends(get_db), current_us
         "created_at": url.created_at,
         "last_clicked": last_click.clicked_at if last_click else None,
         "is_active": url.is_active,
-        "is_expired": (url.expires_at is not None and url.expires_at < datetime.utcnow()),
+        "is_expired": is_url_expired(url),
         "expires_at": url.expires_at
     }
 

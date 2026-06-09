@@ -69,7 +69,7 @@ def auth_headers(client: TestClient) -> dict[str, str]:
 
     login_response = client.post(
         "/api/v1/auth/login",
-        json={"email": email, "password": password},
+        data={"username": email, "password": password},
     )
     assert login_response.status_code == 200
 
@@ -323,6 +323,24 @@ def test_user_cannot_delete_other_users_url(client: TestClient):
     assert delete_response.json()["detail"] == "Invalid Access"
 
 
+def test_user_cannot_update_other_users_expiration(client: TestClient):
+    user_a_headers = auth_headers(client)
+    alias = unique_alias("other-expiration")
+
+    create_response = create_url(client, user_a_headers, custom_alias=alias)
+    assert create_response.status_code == 200
+
+    user_b_headers = auth_headers(client)
+    update_response = client.patch(
+        f"/api/v1/urls/{alias}/expiration",
+        headers=user_b_headers,
+        json={"expires_at": "2030-01-01T00:00:00"},
+    )
+
+    assert update_response.status_code == 403
+    assert update_response.json()["detail"] == "Invalid Access"
+
+
 def test_update_url_expiration(client: TestClient):
     headers = auth_headers(client)
     alias = unique_alias("expiration-update")
@@ -384,6 +402,30 @@ def test_delete_url_removes_short_code(client: TestClient):
 
     assert redirect_response.status_code == 404
     assert redirect_response.json()["detail"] == "URL Not Found"
+
+
+def test_delete_url_with_click_history_succeeds(client: TestClient):
+    headers = auth_headers(client)
+    alias = unique_alias("delete-clicks")
+
+    create_response = create_url(client, headers, custom_alias=alias)
+    assert create_response.status_code == 200
+
+    first_redirect = client.get(f"/{alias}", follow_redirects=False)
+    second_redirect = client.get(f"/{alias}", follow_redirects=False)
+    assert first_redirect.status_code in [307, 308]
+    assert second_redirect.status_code in [307, 308]
+
+    delete_response = client.delete(
+        f"/api/v1/urls/{alias}",
+        headers=headers,
+    )
+
+    assert delete_response.status_code == 200
+    assert delete_response.json() == {"message": "URL Deleted"}
+
+    redirect_response = client.get(f"/{alias}", follow_redirects=False)
+    assert redirect_response.status_code == 404
 
 
 def test_my_urls_does_not_include_other_users_urls(client: TestClient):

@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from sqlalchemy.orm import Session
 
 from app.models import URL, User, Click
@@ -7,6 +9,26 @@ from app.utils.short_code import generate_short_code
 
 def get_url_by_short_code(db: Session, short_code: str) -> URL | None:
     return db.query(URL).filter(URL.short_code == short_code).first()
+
+
+def normalize_datetime(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+
+    return value.astimezone(timezone.utc)
+
+
+def is_url_expired(url: URL, now: datetime | None = None) -> bool:
+    expires_at = normalize_datetime(url.expires_at)
+
+    if expires_at is None:
+        return False
+
+    current_time = now or datetime.now(timezone.utc)
+    return current_time > expires_at
 
 
 def create_short_url(db: Session, url_data: URLCreate, current_user: User, base_url: str = "http://localhost:8000") -> dict:

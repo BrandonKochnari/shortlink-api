@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, HttpUrl, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, HttpUrl
 
 
 class URLCreate(BaseModel):
@@ -9,15 +9,14 @@ class URLCreate(BaseModel):
 
 
 class URLResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     original_url: str
     short_code: str
     short_url: str
     expires_at: datetime | None = None
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -32,12 +31,11 @@ class Token(BaseModel):
     token_type: str
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     email: EmailStr
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 class URLAnalytics(BaseModel):
     short_code: str

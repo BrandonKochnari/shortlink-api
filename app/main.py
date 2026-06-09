@@ -1,14 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone
 
-from app import models
-from app.database import Base, engine, get_db
+from app.database import get_db
 from app.routers import urls, auth
-from app.services.url_service import get_url_by_short_code, record_click
-
-Base.metadata.create_all(bind=engine)
+from app.services.url_service import get_url_by_short_code, is_url_expired, record_click
 
 app = FastAPI(title="Shortlink API")
 
@@ -39,8 +35,8 @@ def redirect_to_original_url(short_code: str, db: Session = Depends(get_db)):
             status_code=410,
             detail="URL Is Inactive"
         )
-    
-    if url.expires_at and url.expires_at < datetime.utcnow():
+
+    if is_url_expired(url):
         raise HTTPException(
             status_code=410,
             detail="URL Has Expired"

@@ -20,7 +20,12 @@ class URL(Base):
 
     is_active = Column(Boolean, default=True)
 
-    clicks = relationship("Click", back_populates="url")
+    clicks = relationship(
+        "Click",
+        back_populates="url",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
 class User(Base):
     __tablename__ = "users"
@@ -37,7 +42,7 @@ class Click(Base):
 
     url_id = Column(
         Integer,
-        ForeignKey("urls.id"),
+        ForeignKey("urls.id", ondelete="CASCADE"),
         nullable=False
     )
 
