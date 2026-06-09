@@ -1,18 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError
 from sqlalchemy.orm import Session
-from fastapi.security import OAuth2PasswordBearer
+
+from app.database import get_db
+from app.models import User
 from app.services.security import (
     hash_password,
     verify_password,
     create_access_token,
     decode_access_token
 )
-
-from app.database import get_db
-from app.models import User
 from app.schemas import (
     UserCreate,
-    UserLogin,
     UserResponse,
     Token
 )
@@ -54,10 +54,13 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     response_model=Token
 )
 
-def login(user_data: UserLogin, db: Session = Depends(get_db)):
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
     user = (
         db.query(User)
-        .filter(User.email == user_data.email)
+        .filter(User.email == form_data.username)
         .first()
     )
     if not user:
@@ -65,7 +68,7 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
             status_code=401,
             detail="Invalid Email or Password"
         )
-    if not verify_password(user_data.password, user.hashed_password):
+    if not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=401,
             detail="Invalid Email or Password"
@@ -78,8 +81,15 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
     }
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    payload = decode_access_token(token)
-    user_id = payload.get("sub")
+    try:
+        payload = decode_access_token(token)
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid Token"
+        )
+
     if user_id is None:
         raise HTTPException(
             status_code=401,

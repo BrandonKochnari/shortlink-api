@@ -6,6 +6,7 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/shortlink_db
+      SECRET_KEY: change-this-in-production
     depends_on:
       db:
         condition: service_healthy
