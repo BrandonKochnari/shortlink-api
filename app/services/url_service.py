@@ -7,7 +7,8 @@ from app.schemas import URLCreate
 from app.utils.short_code import generate_short_code
 import os
 
-BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
+def get_base_url() -> str:
+    return os.getenv("BASE_URL", "http://localhost:8000").rstrip("/")
 
 
 def get_url_by_short_code(db: Session, short_code: str) -> URL | None:
@@ -34,7 +35,10 @@ def is_url_expired(url: URL, now: datetime | None = None) -> bool:
     return current_time > expires_at
 
 
-def create_short_url(db: Session, url_data: URLCreate, current_user: User, base_url: str = BASE_URL) -> dict:
+def create_short_url(db: Session, url_data: URLCreate, current_user: User, base_url: str | None = None) -> dict:
+
+    base_url = (base_url or get_base_url()).rstrip("/")
+
     if url_data.custom_alias:
         existing_url = get_url_by_short_code(db, url_data.custom_alias)
 
@@ -69,7 +73,10 @@ def create_short_url(db: Session, url_data: URLCreate, current_user: User, base_
         "created_at": new_url.created_at,
     }
 
-def get_urls_for_user(db: Session, user_id: int, base_url: str = BASE_URL) -> list[dict]:
+def get_urls_for_user(db: Session, user_id: int, base_url: str | None = None) -> list[dict]:
+    
+    base_url = (base_url or get_base_url()).rstrip("/")
+
     urls = (
         db.query(URL)
         .filter(URL.user_id == user_id)
