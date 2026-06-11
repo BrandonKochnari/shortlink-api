@@ -66,6 +66,8 @@ function UrlSkeleton() {
   );
 }
 
+type UrlListTransform = (items: ShortUrl[]) => ShortUrl[];
+
 export function Dashboard() {
   const { token } = useAuth();
   const [urls, setUrls] = useState<ShortUrl[]>([]);
@@ -102,7 +104,7 @@ export function Dashboard() {
     setDeleteCode(null);
   }, []);
 
-  const loadUrls = useCallback(async () => {
+  const loadUrls = useCallback(async (transform?: UrlListTransform) => {
     if (!token) {
       return [];
     }
@@ -111,16 +113,17 @@ export function Dashboard() {
     latestFetchId.current = fetchId;
     setError(null);
     const items = await fetchMyUrls(token);
+    const nextItems = transform ? transform(items) : items;
 
     if (fetchId === latestFetchId.current) {
-      setUrls(items);
+      setUrls(nextItems);
     }
 
-    return items;
+    return nextItems;
   }, [token]);
 
-  const refreshUrlsAfterMutation = useCallback(async () => {
-    await loadUrls();
+  const refreshUrlsAfterMutation = useCallback(async (transform?: UrlListTransform) => {
+    await loadUrls(transform);
     cancelEditing();
     setLatestUrl(null);
   }, [cancelEditing, loadUrls]);
@@ -163,7 +166,13 @@ export function Dashboard() {
         ...(expiresAt ? { expires_at: toApiDateTime(expiresAt) } : {}),
       });
 
-      await refreshUrlsAfterMutation();
+      await refreshUrlsAfterMutation((items) => {
+        if (items.some((item) => item.short_code === createdUrl.short_code)) {
+          return items;
+        }
+
+        return [createdUrl, ...items];
+      });
       setLatestUrl(createdUrl);
       setNotice("Short URL created successfully.");
       setOriginalUrl("");
@@ -206,10 +215,15 @@ export function Dashboard() {
     setNotice(null);
 
     try {
+      const nextExpiresAt = editExpiresAt ? toApiDateTime(editExpiresAt) ?? null : null;
       await updateShortUrl(token, shortCode, {
-        expires_at: editExpiresAt ? toApiDateTime(editExpiresAt) ?? null : null,
+        expires_at: nextExpiresAt,
       });
-      await refreshUrlsAfterMutation();
+      await refreshUrlsAfterMutation((items) =>
+        items.map((item) =>
+          item.short_code === shortCode ? { ...item, expires_at: nextExpiresAt } : item,
+        ),
+      );
       setNotice("URL expiration updated.");
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Unable to update URL.");
@@ -230,11 +244,19 @@ export function Dashboard() {
     try {
       if (url.is_active) {
         await deactivateShortUrl(token, url.short_code);
-        await refreshUrlsAfterMutation();
+        await refreshUrlsAfterMutation((items) =>
+          items.map((item) =>
+            item.short_code === url.short_code ? { ...item, is_active: false } : item,
+          ),
+        );
         setNotice("URL deactivated.");
       } else {
         await activateShortUrl(token, url.short_code);
-        await refreshUrlsAfterMutation();
+        await refreshUrlsAfterMutation((items) =>
+          items.map((item) =>
+            item.short_code === url.short_code ? { ...item, is_active: true } : item,
+          ),
+        );
         setNotice("URL activated.");
       }
     } catch (err) {
@@ -255,7 +277,9 @@ export function Dashboard() {
 
     try {
       await deleteShortUrl(token, shortCode);
-      await refreshUrlsAfterMutation();
+      await refreshUrlsAfterMutation((items) =>
+        items.filter((item) => item.short_code !== shortCode),
+      );
       setNotice("URL deleted.");
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Unable to delete URL.");
