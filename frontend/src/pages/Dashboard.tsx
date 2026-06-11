@@ -481,7 +481,7 @@ export function Dashboard() {
                               )}
                             </div>
 
-                            <div className="mt-3 grid gap-4 md:grid-cols-2">
+                            <div className="mt-3 grid gap-4 md:grid-cols-[minmax(220px,360px)_minmax(260px,460px)] md:gap-8">
                               <div className="min-w-0">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                   Original URL
@@ -550,10 +550,7 @@ export function Dashboard() {
                             </div>
                           </div>
 
-                          <div className="relative mx-auto w-full max-w-xs lg:justify-self-center">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Expiration
-                            </p>
+                          <div className="relative mx-auto flex w-full max-w-64 items-center lg:justify-self-center">
                             <button
                               type="button"
                               onClick={() =>
@@ -561,7 +558,7 @@ export function Dashboard() {
                                   expirationPickerCode === url.short_code ? null : url.short_code,
                                 )
                               }
-                              className="mt-1 flex w-full items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                              className="flex w-full items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                             >
                               <span>{url.expires_at ? formatDateET(url.expires_at) : "Set expiration"}</span>
                               <svg className="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
