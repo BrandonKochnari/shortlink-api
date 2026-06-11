@@ -45,18 +45,19 @@ function UrlSkeleton() {
   return (
     <div className="divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200">
       {[0, 1, 2].map((item) => (
-        <div key={item} className="grid gap-3 px-4 py-4 lg:grid-cols-[1fr_1fr_110px_130px_300px]">
-          <div>
-            <div className="skeleton h-4 w-3/4" />
-            <div className="skeleton mt-2 h-3 w-28" />
-          </div>
-          <div className="skeleton h-4 w-full" />
-          <div className="skeleton h-4 w-20" />
-          <div className="skeleton h-4 w-24" />
-          <div className="flex gap-2">
-            <div className="skeleton h-10 w-16" />
-            <div className="skeleton h-10 w-16" />
-            <div className="skeleton h-10 w-24" />
+        <div key={item} className="px-4 py-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 flex-1 space-y-3">
+              <div className="skeleton h-4 w-3/4" />
+              <div className="skeleton h-4 w-1/2" />
+              <div className="skeleton h-3 w-32" />
+            </div>
+            <div className="flex gap-2">
+              <div className="skeleton h-10 w-16" />
+              <div className="skeleton h-10 w-16" />
+              <div className="skeleton h-10 w-24" />
+              <div className="skeleton h-10 w-16" />
+            </div>
           </div>
         </div>
       ))}
@@ -176,6 +177,12 @@ export function Dashboard() {
     setCreateError(null);
   };
 
+  const cancelEditing = () => {
+    setEditingCode(null);
+    setEditExpiresAt("");
+    setDeleteCode(null);
+  };
+
   const handleUpdate = async (shortCode: string) => {
     if (!token) {
       return;
@@ -190,8 +197,7 @@ export function Dashboard() {
         expires_at: editExpiresAt ? toApiDateTime(editExpiresAt) ?? null : null,
       });
       await loadUrls();
-      setEditingCode(null);
-      setEditExpiresAt("");
+      cancelEditing();
       setNotice("URL expiration updated.");
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Unable to update URL.");
@@ -218,6 +224,7 @@ export function Dashboard() {
         setNotice("URL activated.");
       }
       await loadUrls();
+      cancelEditing();
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Unable to change URL status.");
     } finally {
@@ -238,8 +245,7 @@ export function Dashboard() {
       await deleteShortUrl(token, shortCode);
       setUrls((currentUrls) => currentUrls.filter((url) => url.short_code !== shortCode));
       setLatestUrl((currentLatest) => (currentLatest?.short_code === shortCode ? null : currentLatest));
-      setDeleteCode(null);
-      setEditingCode((currentCode) => (currentCode === shortCode ? null : currentCode));
+      cancelEditing();
       setNotice("URL deleted.");
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Unable to delete URL.");
@@ -336,10 +342,11 @@ export function Dashboard() {
                 <p className="text-sm font-semibold text-teal-900">Generated short URL</p>
                 <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <a
-                    className="break-all font-mono text-sm text-teal-800 hover:text-teal-950"
+                    className="truncate font-mono text-sm text-teal-800 hover:text-teal-950"
                     href={latestUrl.short_url}
                     target="_blank"
                     rel="noreferrer"
+                    title={latestUrl.short_url}
                   >
                     {latestUrl.short_url}
                   </a>
@@ -356,11 +363,11 @@ export function Dashboard() {
               <div>
                 <h2 className="text-lg font-semibold text-ink">Your links</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  The current API supports updating expiration, activation state, and deletion.
+                  Basic actions are shown by default. Edit a row to manage status, expiration, or deletion.
                 </p>
               </div>
               <p className="text-sm font-medium text-slate-500">
-                {urls.length} total · {expiringCount} with expiration
+                {urls.length} total / {expiringCount} with expiration
               </p>
             </div>
 
@@ -379,42 +386,57 @@ export function Dashboard() {
               )}
 
               {!isLoading && !error && sortedUrls.length > 0 && (
-                <div className="overflow-hidden rounded-lg border border-slate-200">
-                  <div className="hidden bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 xl:grid xl:grid-cols-[1fr_1fr_110px_130px_300px]">
-                    <span>Original</span>
-                    <span>Short URL</span>
-                    <span>Status</span>
-                    <span>Expires</span>
-                    <span>Actions</span>
-                  </div>
+                <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                   <div className="divide-y divide-slate-200">
                     {sortedUrls.map((url) => (
                       <article key={url.id} className="px-4 py-4">
-                        <div className="grid gap-4 xl:grid-cols-[1fr_1fr_110px_130px_300px] xl:items-center">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-slate-800">{url.original_url}</p>
-                            <p className="mt-1 font-mono text-xs text-slate-500">{url.short_code}</p>
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span
+                                className={[
+                                  "inline-flex rounded-md px-2 py-1 text-xs font-semibold",
+                                  url.is_active ? "bg-teal-50 text-teal-700" : "bg-slate-100 text-slate-600",
+                                ].join(" ")}
+                              >
+                                {url.is_active ? "Active" : "Inactive"}
+                              </span>
+                              <span className="font-mono text-xs text-slate-500">{url.short_code}</span>
+                              <span className="text-xs text-slate-400">
+                                {url.expires_at ? `Expires ${formatDateET(url.expires_at)}` : "No expiration"}
+                              </span>
+                            </div>
+
+                            <div className="mt-3 grid gap-3 md:grid-cols-2">
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Original URL
+                                </p>
+                                <p
+                                  className="mt-1 truncate text-sm font-semibold text-slate-800"
+                                  title={url.original_url}
+                                >
+                                  {url.original_url}
+                                </p>
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Short URL
+                                </p>
+                                <a
+                                  className="mt-1 block truncate font-mono text-sm text-mint hover:text-teal-700"
+                                  href={url.short_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  title={url.short_url}
+                                >
+                                  {url.short_url}
+                                </a>
+                              </div>
+                            </div>
                           </div>
-                          <a
-                            className="min-w-0 break-all font-mono text-sm text-mint hover:text-teal-700"
-                            href={url.short_url}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {url.short_url}
-                          </a>
-                          <span
-                            className={[
-                              "inline-flex w-fit rounded-md px-2 py-1 text-xs font-semibold",
-                              url.is_active ? "bg-teal-50 text-teal-700" : "bg-slate-100 text-slate-600",
-                            ].join(" ")}
-                          >
-                            {url.is_active ? "Active" : "Inactive"}
-                          </span>
-                          <p className="text-sm text-slate-600">
-                            {url.expires_at ? formatDateET(url.expires_at) : "No expiration"}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
+
+                          <div className="flex shrink-0 flex-wrap gap-2 lg:max-w-72 lg:justify-end">
                             <button type="button" onClick={() => handleCopy(url)} className="btn-secondary px-3">
                               {copiedId === url.id ? "Copied" : "Copy"}
                             </button>
@@ -430,28 +452,13 @@ export function Dashboard() {
                             <button type="button" onClick={() => startEditing(url)} className="btn-secondary px-3">
                               Edit
                             </button>
-                            <button
-                              type="button"
-                              disabled={actionCode === url.short_code}
-                              onClick={() => handleToggleActive(url)}
-                              className="btn-secondary px-3"
-                            >
-                              {url.is_active ? "Deactivate" : "Activate"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeleteCode(url.short_code)}
-                              className="btn-secondary border-red-200 text-red-700 hover:bg-red-50"
-                            >
-                              Delete
-                            </button>
                           </div>
                         </div>
 
                         {editingCode === url.short_code && (
                           <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                            <div className="grid gap-4 md:grid-cols-[1fr_auto_auto] md:items-end">
-                              <label className="field-label" htmlFor={`edit-expires-${url.id}`}>
+                            <div className="flex flex-col gap-4 xl:flex-row xl:items-end">
+                              <label className="field-label flex-1" htmlFor={`edit-expires-${url.id}`}>
                                 Expiration
                                 <input
                                   id={`edit-expires-${url.id}`}
@@ -461,24 +468,34 @@ export function Dashboard() {
                                   className="field-input bg-white"
                                 />
                               </label>
-                              <button
-                                type="button"
-                                disabled={actionCode === url.short_code}
-                                onClick={() => handleUpdate(url.short_code)}
-                                className="btn-accent"
-                              >
-                                {actionCode === url.short_code ? "Saving..." : "Save"}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingCode(null);
-                                  setEditExpiresAt("");
-                                }}
-                                className="btn-secondary"
-                              >
-                                Cancel
-                              </button>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  disabled={actionCode === url.short_code}
+                                  onClick={() => handleUpdate(url.short_code)}
+                                  className="btn-accent"
+                                >
+                                  {actionCode === url.short_code ? "Saving..." : "Save"}
+                                </button>
+                                <button type="button" onClick={cancelEditing} className="btn-secondary">
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={actionCode === url.short_code}
+                                  onClick={() => handleToggleActive(url)}
+                                  className="btn-secondary"
+                                >
+                                  {url.is_active ? "Deactivate" : "Activate"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleteCode(url.short_code)}
+                                  className="btn-secondary border-red-200 text-red-700 hover:bg-red-50"
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             </div>
                             <p className="mt-2 text-xs text-slate-500">
                               Original URL and custom alias editing are not exposed by the current backend API.
