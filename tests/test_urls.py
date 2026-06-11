@@ -225,6 +225,49 @@ def test_analytics_returns_click_count(client: TestClient):
     assert data["last_clicked"] is not None
 
 
+def test_prefetch_request_does_not_increment_click_count(client: TestClient):
+    headers = auth_headers(client)
+    alias = unique_alias("prefetch")
+
+    create_response = create_url(client, headers, custom_alias=alias)
+    assert create_response.status_code == 200
+
+    prefetch_response = client.get(
+        f"/{alias}",
+        follow_redirects=False,
+        headers={
+            "purpose": "prefetch",
+            "sec-fetch-mode": "no-cors",
+            "sec-fetch-dest": "empty",
+        },
+    )
+    assert prefetch_response.status_code in [307, 308]
+
+    analytics_after_prefetch = client.get(
+        f"/api/v1/urls/{alias}/analytics",
+        headers=headers,
+    )
+    assert analytics_after_prefetch.status_code == 200
+    assert analytics_after_prefetch.json()["clicks"] == 0
+
+    navigate_response = client.get(
+        f"/{alias}",
+        follow_redirects=False,
+        headers={
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-dest": "document",
+        },
+    )
+    assert navigate_response.status_code in [307, 308]
+
+    analytics_after_navigation = client.get(
+        f"/api/v1/urls/{alias}/analytics",
+        headers=headers,
+    )
+    assert analytics_after_navigation.status_code == 200
+    assert analytics_after_navigation.json()["clicks"] == 1
+
+
 def test_deactivate_url_blocks_redirect(client: TestClient):
     headers = auth_headers(client)
     alias = unique_alias("deactivate")

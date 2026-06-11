@@ -2,12 +2,15 @@ import os
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.routers import urls, auth
 from app.services.url_service import get_url_by_short_code, is_url_expired, record_click
+import os
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Shortlink API")
 
@@ -36,7 +39,11 @@ def root():
     return {"message": "Shortlink API Is Running"}
 
 @app.get("/{short_code}")
-def redirect_to_original_url(short_code: str, db: Session = Depends(get_db)):
+def redirect_to_original_url(
+    short_code: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
     url = get_url_by_short_code(db, short_code)
 
     if not url:
@@ -57,6 +64,23 @@ def redirect_to_original_url(short_code: str, db: Session = Depends(get_db)):
             detail="URL Has Expired"
         )
     
-    record_click(db, url)
+    # Some browsers and crawlers issue speculative requests before the real
+    # navigation. We only count the actual navigation request.
+    purpose = (
+        request.headers.get("purpose")
+        or request.headers.get("x-purpose")
+        or request.headers.get("sec-purpose")
+    )
+    sec_fetch_dest = request.headers.get("sec-fetch-dest")
+    sec_fetch_mode = request.headers.get("sec-fetch-mode")
+
+    is_speculative_request = (
+        purpose in {"prefetch", "preview"}
+        or sec_fetch_mode == "navigate" and sec_fetch_dest not in {None, "document", "iframe"}
+        or sec_fetch_mode != "navigate" and sec_fetch_dest in {"empty", "object"}
+    )
+
+    if not is_speculative_request:
+        record_click(db, url)
 
     return RedirectResponse(url.original_url)
