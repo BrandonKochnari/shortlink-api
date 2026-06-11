@@ -1,4 +1,18 @@
-const DEFAULT_API_BASE_URL = "https://shortlink-backend-bff9.onrender.com";
+const DEFAULT_API_BASE_URL = "https://shortlink-c8sm.onrender.com";
+
+declare global {
+  interface Window {
+    __SHORTLINK_CONFIG__?: {
+      API_BASE_URL?: string;
+    };
+  }
+}
+
+function normalizeBaseUrl(value: string | undefined) {
+  return value?.trim().replace(/\/$/, "");
+}
 
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") || DEFAULT_API_BASE_URL;
+  normalizeBaseUrl(window.__SHORTLINK_CONFIG__?.API_BASE_URL) ||
+  normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL) ||
+  DEFAULT_API_BASE_URL;

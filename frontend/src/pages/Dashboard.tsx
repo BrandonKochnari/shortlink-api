@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { API_BASE_URL } from "../api/config";
 import {
@@ -82,6 +82,7 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
+  const latestFetchId = useRef(0);
 
   const sortedUrls = useMemo(
     () =>
@@ -103,12 +104,19 @@ export function Dashboard() {
 
   const loadUrls = useCallback(async () => {
     if (!token) {
-      return;
+      return [];
     }
 
+    const fetchId = latestFetchId.current + 1;
+    latestFetchId.current = fetchId;
     setError(null);
     const items = await fetchMyUrls(token);
-    setUrls(items);
+
+    if (fetchId === latestFetchId.current) {
+      setUrls(items);
+    }
+
+    return items;
   }, [token]);
 
   const refreshUrlsAfterMutation = useCallback(async () => {

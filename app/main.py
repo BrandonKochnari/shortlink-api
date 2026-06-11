@@ -13,7 +13,7 @@ app = FastAPI(title="Shortlink API")
 
 allowed_origins = os.getenv(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5173,https://shortlink-generator-app.onrender.com,https://shortlink-api-4ubx.onrender.com",
+    "http://localhost:5173,https://shortlink-generator-app.onrender.com,https://shortlink-c8sm.onrender.com",
 ).split(",")
 
 app.add_middleware(
