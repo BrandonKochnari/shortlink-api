@@ -92,29 +92,22 @@ export function Dashboard() {
     [urls],
   );
 
-  const activeCount = urls.filter((url) => url.is_active !== false).length;
+  const activeCount = urls.filter((url) => url.is_active).length;
   const expiringCount = urls.filter((url) => url.expires_at).length;
   const latestCreated = sortedUrls[0]?.created_at ? formatDateET(sortedUrls[0].created_at) : "No links yet";
 
-  const loadUrls = useCallback(async () => {
+  const loadUrls = useCallback(async (statusOverrides: Record<string, boolean> = {}) => {
     if (!token) {
       return;
     }
 
     setError(null);
     const items = await fetchMyUrls(token);
-    setUrls((currentUrls) =>
-      items.map((item) => {
-        if (typeof item.is_active === "boolean") {
-          return item;
-        }
-
-        const currentUrl = currentUrls.find((url) => url.short_code === item.short_code);
-        return {
-          ...item,
-          is_active: currentUrl?.is_active ?? true,
-        };
-      }),
+    setUrls(
+      items.map((item) => ({
+        ...item,
+        is_active: statusOverrides[item.short_code] ?? item.is_active ?? true,
+      })),
     );
   }, [token]);
 
@@ -228,24 +221,15 @@ export function Dashboard() {
     setNotice(null);
 
     try {
-      if (url.is_active !== false) {
+      if (url.is_active) {
         await deactivateShortUrl(token, url.short_code);
-        setUrls((currentUrls) =>
-          currentUrls.map((currentUrl) =>
-            currentUrl.short_code === url.short_code ? { ...currentUrl, is_active: false } : currentUrl,
-          ),
-        );
+        await loadUrls({ [url.short_code]: false });
         setNotice("URL deactivated.");
       } else {
         await activateShortUrl(token, url.short_code);
-        setUrls((currentUrls) =>
-          currentUrls.map((currentUrl) =>
-            currentUrl.short_code === url.short_code ? { ...currentUrl, is_active: true } : currentUrl,
-          ),
-        );
+        await loadUrls({ [url.short_code]: true });
         setNotice("URL activated.");
       }
-      await loadUrls();
       cancelEditing();
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Unable to change URL status.");
@@ -418,10 +402,10 @@ export function Dashboard() {
                               <span
                                 className={[
                                   "inline-flex rounded-md px-2 py-1 text-xs font-semibold",
-                                  url.is_active !== false ? "bg-teal-50 text-teal-700" : "bg-slate-100 text-slate-600",
+                                  url.is_active ? "bg-teal-50 text-teal-700" : "bg-slate-100 text-slate-600",
                                 ].join(" ")}
                               >
-                                {url.is_active !== false ? "Active" : "Inactive"}
+                                {url.is_active ? "Active" : "Inactive"}
                               </span>
                               <span className="font-mono text-xs text-slate-500">{url.short_code}</span>
                               <span className="text-xs text-slate-400">
@@ -508,7 +492,7 @@ export function Dashboard() {
                                   onClick={() => handleToggleActive(url)}
                                   className="btn-secondary"
                                 >
-                                  {url.is_active !== false ? "Deactivate" : "Activate"}
+                                  {url.is_active ? "Deactivate" : "Activate"}
                                 </button>
                                 <button
                                   type="button"
