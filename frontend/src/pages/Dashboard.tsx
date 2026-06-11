@@ -74,7 +74,6 @@ export function Dashboard() {
   const [urls, setUrls] = useState<ShortUrl[]>([]);
   const [originalUrl, setOriginalUrl] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
-  const [latestUrl, setLatestUrl] = useState<ShortUrl | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -84,7 +83,6 @@ export function Dashboard() {
   const [deleteCode, setDeleteCode] = useState<string | null>(null);
   const [menuCode, setMenuCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [createNotice, setCreateNotice] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [rowMessage, setRowMessage] = useState<{ shortCode: string; message: string; tone: "success" | "error" } | null>(null);
   const latestFetchId = useRef(0);
@@ -107,6 +105,34 @@ export function Dashboard() {
     setExpirationPickerCode(null);
   }, []);
 
+  useEffect(() => {
+    if (!menuCode && !expirationPickerCode) {
+      return;
+    }
+
+    const closeFloatingControls = (event: PointerEvent) => {
+      const target = event.target;
+
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      if (target.closest("[data-floating-control]")) {
+        return;
+      }
+
+      setMenuCode(null);
+      setDeleteCode(null);
+      setExpirationPickerCode(null);
+    };
+
+    document.addEventListener("pointerdown", closeFloatingControls);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeFloatingControls);
+    };
+  }, [expirationPickerCode, menuCode]);
+
   const loadUrls = useCallback(async (transform?: UrlListTransform) => {
     if (!token) {
       return [];
@@ -128,7 +154,6 @@ export function Dashboard() {
   const refreshUrlsAfterMutation = useCallback(async (transform?: UrlListTransform) => {
     await loadUrls(transform);
     clearTransientState();
-    setLatestUrl(null);
   }, [clearTransientState, loadUrls]);
 
   useEffect(() => {
@@ -160,7 +185,6 @@ export function Dashboard() {
     }
 
     setCreateError(null);
-    setCreateNotice(null);
     setRowMessage(null);
     setIsCreating(true);
 
@@ -177,8 +201,7 @@ export function Dashboard() {
 
         return [createdUrl, ...items];
       });
-      setLatestUrl(createdUrl);
-      setCreateNotice("Short URL created successfully.");
+      setRowMessage({ shortCode: createdUrl.short_code, message: "Created", tone: "success" });
       setOriginalUrl("");
       setExpiresAt("");
     } catch (err) {
@@ -212,7 +235,6 @@ export function Dashboard() {
 
     setActionCode(shortCode);
     setCreateError(null);
-    setCreateNotice(null);
     setRowMessage(null);
 
     try {
@@ -243,7 +265,6 @@ export function Dashboard() {
       ...currentValues,
       [url.short_code]: value,
     }));
-    setCreateNotice(null);
     setCreateError(null);
     setRowMessage(null);
 
@@ -262,7 +283,6 @@ export function Dashboard() {
 
     setActionCode(url.short_code);
     setCreateError(null);
-    setCreateNotice(null);
     setRowMessage(null);
 
     try {
@@ -301,7 +321,6 @@ export function Dashboard() {
 
     setActionCode(shortCode);
     setCreateError(null);
-    setCreateNotice(null);
     setRowMessage(null);
 
     try {
@@ -322,18 +341,18 @@ export function Dashboard() {
   };
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-4">
       <div className="page-header">
         <div>
           <p className="eyebrow">Dashboard</p>
           <h1 className="page-title">Manage short links</h1>
-          <p className="page-copy">Create, update, copy, open, and inspect analytics for your shortened URLs.</p>
+          <p className="page-copy">Create, update, copy, and inspect analytics for your shortened URLs.</p>
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-5xl space-y-6">
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <form className="panel panel-body" onSubmit={handleCreate}>
+      <div className="mx-auto w-full max-w-5xl space-y-5">
+        <div className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <form className="panel panel-body flex h-full flex-col" onSubmit={handleCreate}>
             <div>
               <div>
                 <h2 className="text-lg font-semibold text-ink">Create a short URL</h2>
@@ -343,12 +362,11 @@ export function Dashboard() {
               </div>
             </div>
 
-            <div className="mt-5 space-y-3">
-              {createNotice && <div className="alert-success">{createNotice}</div>}
+            <div className="mt-4 space-y-3">
               {createError && <div className="alert-error">{createError}</div>}
             </div>
 
-            <div className="mt-5 grid gap-4">
+            <div className="mt-4 grid gap-3">
               <label className="field-label" htmlFor="original-url">
                 Original URL
                 <input
@@ -374,35 +392,15 @@ export function Dashboard() {
               </label>
             </div>
 
-            <div className="mt-5 flex justify-end">
+            <div className="mt-auto flex justify-end pt-4">
               <button type="submit" disabled={isCreating} className="btn-accent sm:min-w-28">
                 {isCreating ? "Creating..." : "Create"}
               </button>
             </div>
-
-            {latestUrl && (
-              <div className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                <p className="text-sm font-semibold text-blue-900">Generated short URL</p>
-                <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <a
-                    className="truncate font-mono text-sm text-blue-800 hover:text-blue-950"
-                    href={buildOpenShortUrl(latestUrl.short_code)}
-                    target="_blank"
-                    rel="noreferrer"
-                    title={buildShortUrl(latestUrl.short_code)}
-                  >
-                    {buildShortUrl(latestUrl.short_code)}
-                  </a>
-                  <button type="button" onClick={() => handleCopy(latestUrl)} className="btn-secondary">
-                    {copiedId === latestUrl.id ? "Copied" : "Copy"}
-                  </button>
-                </div>
-              </div>
-            )}
           </form>
 
-          <aside className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+          <aside className="flex h-full flex-col gap-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
               <article className="panel panel-body">
                 <p className="text-sm font-medium text-slate-500">Total links</p>
                 <p className="mt-3 text-3xl font-semibold text-ink">{urls.length}</p>
@@ -413,7 +411,7 @@ export function Dashboard() {
               </article>
             </div>
 
-            <div className="panel panel-body">
+            <div className="panel panel-body flex-1">
               <h2 className="text-lg font-semibold text-ink">API connection</h2>
               <p className="mt-3 text-sm leading-6 text-slate-600">
                 Requests are sent to this backend.
@@ -438,13 +436,13 @@ export function Dashboard() {
               </p>
             </div>
 
-            <div className="mt-6">
+            <div className="mt-5">
               {isLoading && <UrlSkeleton />}
 
               {error && <div className="alert-error">{error}</div>}
 
               {!isLoading && !error && sortedUrls.length === 0 && (
-                <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
                   <p className="text-base font-semibold text-ink">No short URLs yet</p>
                   <p className="mt-2 text-sm text-slate-500">
                     Create your first short link above. It will appear here with copy and analytics actions.
@@ -457,7 +455,7 @@ export function Dashboard() {
                   <div className="divide-y divide-slate-200 overflow-visible">
                     {sortedUrls.map((url) => (
                       <article key={url.id} className="relative px-4 py-4">
-                        <div className="flex flex-col gap-4 pr-12 lg:grid lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
+                        <div className="pr-12">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <span
@@ -481,7 +479,7 @@ export function Dashboard() {
                               )}
                             </div>
 
-                            <div className="mt-3 grid gap-4 md:grid-cols-[minmax(220px,360px)_minmax(260px,460px)] md:gap-8">
+                            <div className="mt-3 grid items-start gap-4 md:grid-cols-[minmax(210px,340px)_minmax(260px,420px)_minmax(180px,260px)] md:gap-7">
                               <div className="min-w-0">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                   Original URL
@@ -547,62 +545,68 @@ export function Dashboard() {
                                   </button>
                                 </div>
                               </div>
-                            </div>
-                          </div>
 
-                          <div className="relative mx-auto flex w-full max-w-64 items-center lg:justify-self-center">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setExpirationPickerCode(
-                                  expirationPickerCode === url.short_code ? null : url.short_code,
-                                )
-                              }
-                              className="flex w-full items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                            >
-                              <span>{url.expires_at ? formatDateET(url.expires_at) : "Set expiration"}</span>
-                              <svg className="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                                <path
-                                  d="m6 8 4 4 4-4"
-                                  stroke="currentColor"
-                                  strokeWidth="1.8"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </button>
-
-                            {expirationPickerCode === url.short_code && (
-                              <div className="absolute left-1/2 z-50 mt-2 w-72 -translate-x-1/2 rounded-lg border border-slate-200 bg-white p-3 shadow-soft">
-                                <label
-                                  className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-                                  htmlFor={`edit-expires-${url.id}`}
-                                >
-                                  Choose date
-                                  <input
-                                    id={`edit-expires-${url.id}`}
-                                    type="datetime-local"
-                                    value={getExpirationDraft(url)}
-                                    onChange={(event) => updateExpirationDraft(url, event.target.value)}
-                                    className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none ring-mint transition focus:border-mint focus:ring-2"
-                                  />
-                                </label>
+                              <div className="relative w-full md:pt-5" data-floating-control>
                                 <button
                                   type="button"
-                                  onClick={() => updateExpirationDraft(url, "")}
-                                  className="mt-2 text-sm font-semibold text-slate-600 hover:text-ink"
+                                  onClick={() => {
+                                    setMenuCode(null);
+                                    setDeleteCode(null);
+                                    setExpirationPickerCode(
+                                      expirationPickerCode === url.short_code ? null : url.short_code,
+                                    );
+                                  }}
+                                  className="flex w-full items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                                 >
-                                  Clear expiration
+                                  <span>{url.expires_at ? formatDateET(url.expires_at) : "Set expiration"}</span>
+                                  <svg className="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                    <path
+                                      d="m6 8 4 4 4-4"
+                                      stroke="currentColor"
+                                      strokeWidth="1.8"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
                                 </button>
+
+                                {expirationPickerCode === url.short_code && (
+                                  <div className="absolute left-1/2 z-50 mt-2 w-72 -translate-x-1/2 rounded-lg border border-slate-200 bg-white p-3 shadow-soft">
+                                    <label
+                                      className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                                      htmlFor={`edit-expires-${url.id}`}
+                                    >
+                                      Choose date
+                                      <input
+                                        id={`edit-expires-${url.id}`}
+                                        type="datetime-local"
+                                        value={getExpirationDraft(url)}
+                                        onChange={(event) => updateExpirationDraft(url, event.target.value)}
+                                        className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none ring-mint transition focus:border-mint focus:ring-2"
+                                      />
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={() => updateExpirationDraft(url, "")}
+                                      className="mt-2 text-sm font-semibold text-slate-600 hover:text-ink"
+                                    >
+                                      Clear expiration
+                                    </button>
+                                  </div>
+                                )}
                               </div>
-                            )}
+                            </div>
                           </div>
                         </div>
 
-                        <div className="absolute right-4 top-4">
+                        <div className="absolute right-4 top-4" data-floating-control>
                           <button
                             type="button"
-                            onClick={() => setMenuCode(menuCode === url.short_code ? null : url.short_code)}
+                            onClick={() => {
+                              setExpirationPickerCode(null);
+                              setDeleteCode(null);
+                              setMenuCode(menuCode === url.short_code ? null : url.short_code);
+                            }}
                             className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-100"
                             title="More actions"
                             aria-label="More actions"
@@ -634,14 +638,30 @@ export function Dashboard() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setDeleteCode(url.short_code);
-                                  setMenuCode(null);
-                                }}
+                                onClick={() => setDeleteCode(url.short_code)}
                                 className="block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-red-700 hover:bg-red-50"
                               >
                                 Delete
                               </button>
+                              {deleteCode === url.short_code && (
+                                <div className="mt-1 border-t border-slate-200 pt-2">
+                                  <button
+                                    type="button"
+                                    disabled={actionCode === url.short_code}
+                                    onClick={() => handleDelete(url.short_code)}
+                                    className="block w-full rounded-md bg-red-600 px-3 py-2 text-left text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
+                                  >
+                                    {actionCode === url.short_code ? "Deleting..." : "Confirm delete"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setDeleteCode(null)}
+                                    className="mt-1 block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-600 hover:bg-slate-100"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -650,27 +670,6 @@ export function Dashboard() {
                           <p className="mt-3 text-xs font-medium text-slate-500">Saving changes...</p>
                         )}
 
-                        {deleteCode === url.short_code && (
-                          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
-                            <p className="text-sm font-semibold text-red-800">Delete this short URL?</p>
-                            <p className="mt-1 text-sm text-red-700">
-                              This removes the code and future redirects will return 404.
-                            </p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                disabled={actionCode === url.short_code}
-                                onClick={() => handleDelete(url.short_code)}
-                                className="btn-coral"
-                              >
-                                {actionCode === url.short_code ? "Deleting..." : "Confirm delete"}
-                              </button>
-                              <button type="button" onClick={() => setDeleteCode(null)} className="btn-secondary">
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        )}
                       </article>
                     ))}
                   </div>
