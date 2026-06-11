@@ -34,6 +34,10 @@ export function buildShortUrl(shortCode: string) {
   return `${API_BASE_URL}/${encodeURIComponent(shortCode)}`;
 }
 
+export function buildOpenShortUrl(shortCode: string) {
+  return `${buildShortUrl(shortCode)}?_open=${Date.now()}`;
+}
+
 type ApiErrorBody = {
   detail?: string | { msg?: string }[];
   message?: string;
