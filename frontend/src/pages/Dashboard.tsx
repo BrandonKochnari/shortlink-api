@@ -79,8 +79,7 @@ export function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [actionCode, setActionCode] = useState<string | null>(null);
-  const [editingCode, setEditingCode] = useState<string | null>(null);
-  const [editExpiresAt, setEditExpiresAt] = useState("");
+  const [editExpiresAtByCode, setEditExpiresAtByCode] = useState<Record<string, string>>({});
   const [deleteCode, setDeleteCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -99,9 +98,7 @@ export function Dashboard() {
   const activeCount = urls.filter((url) => url.is_active).length;
   const expiringCount = urls.filter((url) => url.expires_at).length;
 
-  const cancelEditing = useCallback(() => {
-    setEditingCode(null);
-    setEditExpiresAt("");
+  const clearTransientState = useCallback(() => {
     setDeleteCode(null);
   }, []);
 
@@ -125,9 +122,9 @@ export function Dashboard() {
 
   const refreshUrlsAfterMutation = useCallback(async (transform?: UrlListTransform) => {
     await loadUrls(transform);
-    cancelEditing();
+    clearTransientState();
     setLatestUrl(null);
-  }, [cancelEditing, loadUrls]);
+  }, [clearTransientState, loadUrls]);
 
   useEffect(() => {
     let isMounted = true;
@@ -198,14 +195,6 @@ export function Dashboard() {
     }
   };
 
-  const startEditing = (url: ShortUrl) => {
-    setEditingCode(url.short_code);
-    setEditExpiresAt(toDateTimeLocalInput(url.expires_at));
-    setDeleteCode(null);
-    setNotice(null);
-    setCreateError(null);
-  };
-
   const handleUpdate = async (shortCode: string) => {
     if (!token) {
       return;
@@ -216,6 +205,7 @@ export function Dashboard() {
     setNotice(null);
 
     try {
+      const editExpiresAt = editExpiresAtByCode[shortCode] ?? "";
       const nextExpiresAt = editExpiresAt ? toApiDateTime(editExpiresAt) ?? null : null;
       await updateShortUrl(token, shortCode, {
         expires_at: nextExpiresAt,
@@ -232,6 +222,18 @@ export function Dashboard() {
       setActionCode(null);
     }
   };
+
+  const updateExpirationDraft = (url: ShortUrl, value: string) => {
+    setEditExpiresAtByCode((currentValues) => ({
+      ...currentValues,
+      [url.short_code]: value,
+    }));
+    setNotice(null);
+    setCreateError(null);
+  };
+
+  const getExpirationDraft = (url: ShortUrl) =>
+    editExpiresAtByCode[url.short_code] ?? toDateTimeLocalInput(url.expires_at);
 
   const handleToggleActive = async (url: ShortUrl) => {
     if (!token) {
@@ -395,7 +397,7 @@ export function Dashboard() {
               <div>
                 <h2 className="text-lg font-semibold text-ink">Your links</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Basic actions are shown by default. Edit a row to manage status, expiration, or deletion.
+                  Copy, open, analyze, and manage each short link.
                 </p>
               </div>
               <p className="text-sm font-medium text-slate-500">
@@ -486,56 +488,49 @@ export function Dashboard() {
                             >
                               Analytics
                             </Link>
-                            <button type="button" onClick={() => startEditing(url)} className="btn-secondary px-3">
-                              Edit
-                            </button>
                           </div>
                         </div>
 
-                        {editingCode === url.short_code && (
-                          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                            <div className="flex flex-col gap-4 xl:flex-row xl:items-end">
-                              <label className="field-label flex-1" htmlFor={`edit-expires-${url.id}`}>
-                                Expiration
-                                <input
-                                  id={`edit-expires-${url.id}`}
-                                  type="datetime-local"
-                                  value={editExpiresAt}
-                                  onChange={(event) => setEditExpiresAt(event.target.value)}
-                                  className="field-input bg-white"
-                                />
-                              </label>
-                              <div className="flex flex-wrap gap-2">
-                                <button
-                                  type="button"
-                                  disabled={actionCode === url.short_code}
-                                  onClick={() => handleUpdate(url.short_code)}
-                                  className="btn-accent"
-                                >
-                                  {actionCode === url.short_code ? "Saving..." : "Save"}
-                                </button>
-                                <button type="button" onClick={cancelEditing} className="btn-secondary">
-                                  Cancel
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={actionCode === url.short_code}
-                                  onClick={() => handleToggleActive(url)}
-                                  className="btn-secondary"
-                                >
-                                  {url.is_active ? "Deactivate" : "Activate"}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setDeleteCode(url.short_code)}
-                                  className="btn-secondary border-red-200 text-red-700 hover:bg-red-50"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </div>
+                        <div className="mt-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 lg:flex-row lg:items-end lg:justify-between">
+                          <label
+                            className="min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-500 lg:w-72"
+                            htmlFor={`edit-expires-${url.id}`}
+                          >
+                            Expiration
+                            <input
+                              id={`edit-expires-${url.id}`}
+                              type="datetime-local"
+                              value={getExpirationDraft(url)}
+                              onChange={(event) => updateExpirationDraft(url, event.target.value)}
+                              className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none ring-mint transition focus:border-mint focus:ring-2"
+                            />
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              disabled={actionCode === url.short_code}
+                              onClick={() => handleUpdate(url.short_code)}
+                              className="btn-accent px-3"
+                            >
+                              {actionCode === url.short_code ? "Saving..." : "Save"}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={actionCode === url.short_code}
+                              onClick={() => handleToggleActive(url)}
+                              className="btn-secondary px-3"
+                            >
+                              {url.is_active ? "Deactivate" : "Activate"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteCode(url.short_code)}
+                              className="btn-secondary border-red-200 px-3 text-red-700 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
                           </div>
-                        )}
+                        </div>
 
                         {deleteCode === url.short_code && (
                           <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
