@@ -486,6 +486,11 @@ export function Dashboard() {
                                   {rowMessage.message}
                                 </span>
                               )}
+                              {actionCode === url.short_code && (
+                                <span className="text-xs font-semibold text-blue-700">
+                                  Saving changes...
+                                </span>
+                              )}
                             </div>
 
                             <div className="mt-3 grid items-start gap-4 md:grid-cols-[220px_380px_240px] md:gap-4">
@@ -494,7 +499,7 @@ export function Dashboard() {
                                   Original URL
                                 </p>
                                 <p
-                                  className="mt-2 truncate text-sm font-semibold leading-[1.65rem] text-slate-800"
+                                  className="mt-2 truncate text-sm font-semibold leading-[1.7rem] text-slate-800"
                                   title={url.original_url}
                                 >
                                   {url.original_url}
@@ -568,7 +573,7 @@ export function Dashboard() {
                                       expirationPickerCode === url.short_code ? null : url.short_code,
                                     );
                                   }}
-                                  className="mt-1 flex w-full items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                  className="mt-1 flex w-full items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-1.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                                 >
                                   <span className="truncate">{url.expires_at ? formatDateET(url.expires_at) : "Date"}</span>
                                   <svg className="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -679,10 +684,6 @@ export function Dashboard() {
                             </div>
                           )}
                         </div>
-
-                        {actionCode === url.short_code && (
-                          <p className="mt-3 text-xs font-medium text-slate-500">Saving changes...</p>
-                        )}
 
                       </article>
                     ))}
