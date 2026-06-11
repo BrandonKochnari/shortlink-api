@@ -78,6 +78,7 @@ export function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [actionCode, setActionCode] = useState<string | null>(null);
+  const [actionType, setActionType] = useState<"update" | "status" | "delete" | null>(null);
   const [editExpiresAtByCode, setEditExpiresAtByCode] = useState<Record<string, string>>({});
   const [expirationPickerCode, setExpirationPickerCode] = useState<string | null>(null);
   const [deleteCode, setDeleteCode] = useState<string | null>(null);
@@ -98,6 +99,8 @@ export function Dashboard() {
 
   const activeCount = urls.filter((url) => url.is_active).length;
   const expiringCount = urls.filter((url) => url.expires_at).length;
+  const isDeleting = (shortCode: string) => actionCode === shortCode && actionType === "delete";
+  const isChangingStatus = (shortCode: string) => actionCode === shortCode && actionType === "status";
 
   const clearTransientState = useCallback(() => {
     setDeleteCode(null);
@@ -234,6 +237,7 @@ export function Dashboard() {
     }
 
     setActionCode(shortCode);
+    setActionType("update");
     setCreateError(null);
     setRowMessage(null);
 
@@ -257,6 +261,7 @@ export function Dashboard() {
       });
     } finally {
       setActionCode(null);
+      setActionType(null);
     }
   };
 
@@ -282,6 +287,7 @@ export function Dashboard() {
     }
 
     setActionCode(url.short_code);
+    setActionType("status");
     setCreateError(null);
     setRowMessage(null);
 
@@ -311,6 +317,7 @@ export function Dashboard() {
       });
     } finally {
       setActionCode(null);
+      setActionType(null);
     }
   };
 
@@ -320,6 +327,7 @@ export function Dashboard() {
     }
 
     setActionCode(shortCode);
+    setActionType("delete");
     setCreateError(null);
     setRowMessage(null);
 
@@ -337,6 +345,7 @@ export function Dashboard() {
       });
     } finally {
       setActionCode(null);
+      setActionType(null);
     }
   };
 
@@ -485,7 +494,7 @@ export function Dashboard() {
                                   Original URL
                                 </p>
                                 <p
-                                  className="mt-2 truncate text-sm font-semibold leading-8 text-slate-800"
+                                  className="mt-2 truncate text-sm font-semibold leading-[1.65rem] text-slate-800"
                                   title={url.original_url}
                                 >
                                   {url.original_url}
@@ -637,7 +646,11 @@ export function Dashboard() {
                                 onClick={() => handleToggleActive(url)}
                                 className="block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
                               >
-                                {url.is_active ? "Deactivate" : "Activate"}
+                                {isChangingStatus(url.short_code)
+                                  ? "Saving..."
+                                  : url.is_active
+                                    ? "Deactivate"
+                                    : "Activate"}
                               </button>
                               <button
                                 type="button"
@@ -657,7 +670,7 @@ export function Dashboard() {
                                     : "text-red-700 hover:bg-red-50",
                                 ].join(" ")}
                               >
-                                {actionCode === url.short_code
+                                {isDeleting(url.short_code)
                                   ? "Deleting..."
                                   : deleteCode === url.short_code
                                     ? "Confirm delete"
