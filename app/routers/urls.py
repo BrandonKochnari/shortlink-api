@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -14,20 +14,34 @@ from app.models import User, Click
 
 router = APIRouter()
 
+NO_STORE_HEADERS = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
+
+def prevent_cache(response: Response) -> None:
+    response.headers.update(NO_STORE_HEADERS)
+
+
 @router.get("/my-urls", response_model=list[URLResponse])
-def get_my_urls(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_my_urls(response: Response, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    prevent_cache(response)
     return get_urls_for_user(db, current_user.id)
 
 
 @router.post("/", response_model=URLResponse)
-def create_url(url_data: URLCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def create_url(url_data: URLCreate, response: Response, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    prevent_cache(response)
     try:
         return create_short_url(db, url_data, current_user)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
     
 @router.get("/{short_code}/analytics", response_model=URLAnalytics)
-def get_url_analytics(short_code: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_url_analytics(short_code: str, response: Response, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    prevent_cache(response)
     url = get_url_by_short_code(db, short_code)
 
     if not url: 
@@ -61,7 +75,8 @@ def get_url_analytics(short_code: str, db: Session = Depends(get_db), current_us
     }
 
 @router.patch("/{short_code}/deactivate")
-def deactivate_url(short_code: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def deactivate_url(short_code: str, response: Response, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    prevent_cache(response)
     url = get_url_by_short_code(db, short_code)
     
     if not url: 
@@ -75,10 +90,11 @@ def deactivate_url(short_code: str, db: Session = Depends(get_db), current_user:
     db.commit()
     db.refresh(url)
 
-    return {"message": "URL Deactivated", "short_code": url.short_code}
+    return {"message": "URL Deactivated", "short_code": url.short_code, "is_active": url.is_active}
 
 @router.patch("/{short_code}/activate")
-def activate_url(short_code: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def activate_url(short_code: str, response: Response, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    prevent_cache(response)
     url = get_url_by_short_code(db, short_code)
     
     if not url: 
@@ -92,10 +108,11 @@ def activate_url(short_code: str, db: Session = Depends(get_db), current_user: U
     db.commit()
     db.refresh(url)
 
-    return {"message": "URL Activated", "short_code": url.short_code}
+    return {"message": "URL Activated", "short_code": url.short_code, "is_active": url.is_active}
 
 @router.delete("/{short_code}")
-def delete_url(short_code: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def delete_url(short_code: str, response: Response, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    prevent_cache(response)
     url = get_url_by_short_code(db, short_code)
     
     if not url: 
@@ -110,7 +127,8 @@ def delete_url(short_code: str, db: Session = Depends(get_db), current_user: Use
     return {"message": "URL Deleted"}
 
 @router.patch("/{short_code}/expiration")
-def update_expiration(short_code: str, update_data: URLUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def update_expiration(short_code: str, update_data: URLUpdate, response: Response, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    prevent_cache(response)
     url = get_url_by_short_code(db, short_code)
     
     if not url: 
