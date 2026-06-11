@@ -3,17 +3,7 @@ import { Link } from "react-router-dom";
 import { API_BASE_URL } from "../api/config";
 import { createShortUrl, fetchMyUrls, ShortUrl } from "../api/urls";
 import { useAuth } from "../auth/AuthContext";
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "No expiration";
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
+import { formatDateET } from "../lib/formatDate";
 
 function toApiDateTime(value: string) {
   if (!value) {
@@ -69,7 +59,7 @@ export function Dashboard() {
   );
 
   const expiringCount = urls.filter((url) => url.expires_at).length;
-  const latestCreated = sortedUrls[0]?.created_at ? formatDate(sortedUrls[0].created_at) : "No links yet";
+  const latestCreated = sortedUrls[0]?.created_at ? formatDateET(sortedUrls[0].created_at) : "No links yet";
 
   useEffect(() => {
     if (!token) {
@@ -296,7 +286,7 @@ export function Dashboard() {
                         >
                           {url.short_url}
                         </a>
-                        <p className="text-sm text-slate-600">{formatDate(url.expires_at)}</p>
+                        <p className="text-sm text-slate-600">{url.expires_at ? formatDateET(url.expires_at) : "No expiration"}</p>
                         <div className="flex flex-wrap gap-2">
                           <button type="button" onClick={() => handleCopy(url)} className="btn-secondary px-3">
                             {copiedId === url.id ? "Copied" : "Copy"}
