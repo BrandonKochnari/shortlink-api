@@ -4,7 +4,7 @@ export default {
         extend: {
             colors: {
                 ink: "#18202f",
-                mint: "#2f9c95",
+                mint: "#0f73ff",
                 coral: "#e56f51",
                 cloud: "#f5f7fb",
             },

@@ -17,7 +17,7 @@ function formatDate(value: string | null) {
 function Badge({ tone, children }: { tone: "neutral" | "success" | "danger"; children: string }) {
   const toneClass = {
     neutral: "bg-slate-100 text-slate-700",
-    success: "bg-teal-50 text-teal-700",
+    success: "bg-blue-50 text-blue-700",
     danger: "bg-red-50 text-red-700",
   }[tone];
 

@@ -61,7 +61,7 @@
   }
 
   .btn-accent {
-    @apply btn bg-mint text-white hover:bg-teal-700;
+    @apply btn bg-mint text-white hover:bg-blue-700;
   }
 
   .btn-coral {
@@ -69,7 +69,7 @@
   }
 
   .btn-analytics {
-    @apply btn border border-teal-200 bg-teal-50 text-teal-800 hover:border-teal-300 hover:bg-teal-100;
+    @apply btn border border-blue-200 bg-blue-50 text-blue-800 hover:border-blue-300 hover:bg-blue-100;
   }
 
   .btn-secondary {
@@ -81,7 +81,7 @@
   }
 
   .alert-success {
-    @apply rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-800;
+    @apply rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800;
   }
 
   .skeleton {

@@ -91,7 +91,7 @@ export function Login() {
 
         <p className="mt-5 text-center text-sm text-slate-600">
           Need an account?{" "}
-          <Link className="font-semibold text-mint hover:text-teal-700" to="/register">
+          <Link className="font-semibold text-mint hover:text-blue-700" to="/register">
             Register
           </Link>
         </p>

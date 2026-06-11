@@ -338,11 +338,11 @@ export function Dashboard() {
             </div>
 
             {latestUrl && (
-              <div className="mt-5 rounded-lg border border-teal-200 bg-teal-50 p-4">
-                <p className="text-sm font-semibold text-teal-900">Generated short URL</p>
+              <div className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <p className="text-sm font-semibold text-blue-900">Generated short URL</p>
                 <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <a
-                    className="truncate font-mono text-sm text-teal-800 hover:text-teal-950"
+                    className="truncate font-mono text-sm text-blue-800 hover:text-blue-950"
                     href={buildShortUrl(latestUrl.short_code)}
                     target="_blank"
                     rel="noreferrer"
@@ -396,7 +396,7 @@ export function Dashboard() {
                               <span
                                 className={[
                                   "inline-flex rounded-md px-2 py-1 text-xs font-semibold",
-                                  url.is_active ? "bg-teal-50 text-teal-700" : "bg-slate-100 text-slate-600",
+                                  url.is_active ? "bg-blue-50 text-blue-700" : "bg-slate-100 text-slate-600",
                                 ].join(" ")}
                               >
                                 {url.is_active ? "Active" : "Inactive"}
@@ -424,7 +424,7 @@ export function Dashboard() {
                                   Short URL
                                 </p>
                                 <a
-                                  className="mt-1 block truncate font-mono text-sm text-mint hover:text-teal-700"
+                                  className="mt-1 block truncate font-mono text-sm text-mint hover:text-blue-700"
                                   href={buildShortUrl(url.short_code)}
                                   target="_blank"
                                   rel="noreferrer"

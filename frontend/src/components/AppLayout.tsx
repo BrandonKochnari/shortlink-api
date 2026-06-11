@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { LogoMark } from "./LogoMark";
 
 export function AppLayout() {
   const navigate = useNavigate();
@@ -15,9 +16,7 @@ export function AppLayout() {
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <NavLink to="/dashboard" className="flex items-center gap-2 text-xl font-semibold tracking-normal">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-ink text-sm font-bold text-white">
-              S
-            </span>
+            <LogoMark />
             <span>Shortlink</span>
           </NavLink>
           <nav className="flex flex-wrap items-center justify-end gap-2">
