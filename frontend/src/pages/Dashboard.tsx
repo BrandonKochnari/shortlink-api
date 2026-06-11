@@ -299,18 +299,8 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="mx-auto grid w-full max-w-5xl gap-4 md:grid-cols-2">
-        <article className="panel panel-body">
-          <p className="text-sm font-medium text-slate-500">Total links</p>
-          <p className="mt-3 text-3xl font-semibold text-ink">{urls.length}</p>
-        </article>
-        <article className="panel panel-body">
-          <p className="text-sm font-medium text-slate-500">Active links</p>
-          <p className="mt-3 text-3xl font-semibold text-ink">{activeCount}</p>
-        </article>
-      </div>
-
       <div className="mx-auto w-full max-w-5xl space-y-6">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
           <form className="panel panel-body" onSubmit={handleCreate}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
@@ -375,6 +365,30 @@ export function Dashboard() {
               </div>
             )}
           </form>
+
+          <aside className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+              <article className="panel panel-body">
+                <p className="text-sm font-medium text-slate-500">Total links</p>
+                <p className="mt-3 text-3xl font-semibold text-ink">{urls.length}</p>
+              </article>
+              <article className="panel panel-body">
+                <p className="text-sm font-medium text-slate-500">Active links</p>
+                <p className="mt-3 text-3xl font-semibold text-ink">{activeCount}</p>
+              </article>
+            </div>
+
+            <div className="panel panel-body">
+              <h2 className="text-lg font-semibold text-ink">API connection</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                Requests are sent to this backend.
+              </p>
+              <p className="mt-4 break-all rounded-md bg-slate-100 p-3 font-mono text-xs text-slate-700">
+                {API_BASE_URL}
+              </p>
+            </div>
+          </aside>
+        </div>
 
           <div className="panel panel-body">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -520,10 +534,6 @@ export function Dashboard() {
                                 </button>
                               </div>
                             </div>
-                            <p className="mt-2 text-xs text-slate-500">
-                              Short code and original URL editing are not exposed by the current backend API.
-                              Leave expiration blank to clear it.
-                            </p>
                           </div>
                         )}
 
@@ -555,13 +565,6 @@ export function Dashboard() {
               )}
             </div>
           </div>
-        <aside className="panel panel-body">
-          <h2 className="text-lg font-semibold text-ink">API connection</h2>
-          <p className="mt-3 text-sm leading-6 text-slate-600">Authenticated requests use this deployed backend.</p>
-          <p className="mt-4 break-all rounded-md bg-slate-100 p-3 font-mono text-xs text-slate-700">
-            {API_BASE_URL}
-          </p>
-        </aside>
       </div>
     </section>
   );
