@@ -573,7 +573,7 @@ export function Dashboard() {
                                       expirationPickerCode === url.short_code ? null : url.short_code,
                                     );
                                   }}
-                                  className="mt-1 flex w-full items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-1.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                  className="mt-2 flex w-full items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-1 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                                 >
                                   <span className="truncate">{url.expires_at ? formatDateET(url.expires_at) : "Date"}</span>
                                   <svg className="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
