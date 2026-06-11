@@ -1,22 +1,19 @@
 import os
 
-from fastapi import Depends, FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.routers import urls, auth
+from app.routers import auth, urls
 from app.services.url_service import get_url_by_short_code, is_url_expired, record_click
-import os
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Shortlink API")
 
 allowed_origins = os.getenv(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5173,https://shortlink-generator-app.onrender.com"
+    "http://localhost:5173,https://shortlink-generator-app.onrender.com,https://shortlink-api-4ubx.onrender.com",
 ).split(",")
 
 app.add_middleware(
@@ -31,12 +28,14 @@ app.include_router(urls.router, prefix="/api/v1/urls", tags=["URLs"])
 app.include_router(
     auth.router,
     prefix="/api/v1/auth",
-    tags=["Auth"]
+    tags=["Auth"],
 )
+
 
 @app.get("/")
 def root():
     return {"message": "Shortlink API Is Running"}
+
 
 @app.get("/{short_code}")
 def redirect_to_original_url(
@@ -49,23 +48,21 @@ def redirect_to_original_url(
     if not url:
         raise HTTPException(
             status_code=404,
-            detail="URL Not Found"
+            detail="URL Not Found",
         )
-    
+
     if not url.is_active:
         raise HTTPException(
             status_code=410,
-            detail="URL Is Inactive"
+            detail="URL Is Inactive",
         )
 
     if is_url_expired(url):
         raise HTTPException(
             status_code=410,
-            detail="URL Has Expired"
+            detail="URL Has Expired",
         )
-    
-    # Some browsers and crawlers issue speculative requests before the real
-    # navigation. We only count the actual navigation request.
+
     purpose = (
         request.headers.get("purpose")
         or request.headers.get("x-purpose")
