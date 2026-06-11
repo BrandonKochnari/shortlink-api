@@ -95,10 +95,6 @@ export function Dashboard() {
 
   const activeCount = urls.filter((url) => url.is_active).length;
   const expiringCount = urls.filter((url) => url.expires_at).length;
-<<<<<<< HEAD
-  const activeCount = urls.filter((url) => url.is_active).length;
-=======
->>>>>>> 172e5e8200ca497821e96c924ff92226c9820007
 
   const cancelEditing = useCallback(() => {
     setEditingCode(null);
@@ -273,7 +269,6 @@ export function Dashboard() {
         </div>
       </div>
 
-<<<<<<< HEAD
       <div className="mx-auto grid w-full max-w-5xl gap-4 md:grid-cols-2">
         <article className="panel panel-body">
           <p className="text-sm font-medium text-slate-500">Total links</p>
@@ -282,15 +277,6 @@ export function Dashboard() {
         <article className="panel panel-body">
           <p className="text-sm font-medium text-slate-500">Active links</p>
           <p className="mt-3 text-3xl font-semibold text-ink">{activeCount}</p>
-=======
-      <div className="mx-auto w-full max-w-md">
-        <article className="panel panel-body text-center">
-          <p className="text-sm font-medium text-slate-500">Total links</p>
-          <p className="mt-3 text-3xl font-semibold text-ink">{urls.length}</p>
-          <p className="mt-2 text-sm text-slate-500">
-            {activeCount} active / {expiringCount} with expiration
-          </p>
->>>>>>> 172e5e8200ca497821e96c924ff92226c9820007
         </article>
       </div>
 
@@ -551,11 +537,7 @@ export function Dashboard() {
               )}
             </div>
           </div>
-<<<<<<< HEAD
         <aside className="panel panel-body">
-=======
-        <aside className="panel panel-body mx-auto w-full max-w-xl text-center">
->>>>>>> 172e5e8200ca497821e96c924ff92226c9820007
           <h2 className="text-lg font-semibold text-ink">API connection</h2>
           <p className="mt-3 text-sm leading-6 text-slate-600">Authenticated requests use this deployed backend.</p>
           <p className="mt-4 break-all rounded-md bg-slate-100 p-3 font-mono text-xs text-slate-700">

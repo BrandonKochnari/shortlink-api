@@ -8,7 +8,6 @@ export type ShortUrl = {
   is_active: boolean;
   expires_at: string | null;
   created_at: string;
-  is_active: boolean;
 };
 
 export type CreateUrlInput = {
