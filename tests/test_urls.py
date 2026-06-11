@@ -15,6 +15,7 @@ if "DATABASE_URL" not in os.environ:
 
 from app.database import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
+from app.models import User  # noqa: E402
 
 
 TEST_DATABASE_URL = os.environ["DATABASE_URL"]
@@ -37,9 +38,6 @@ def override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
-
-
 @pytest.fixture(autouse=True)
 def reset_database():
     Base.metadata.drop_all(bind=engine)
@@ -49,6 +47,7 @@ def reset_database():
 
 @pytest.fixture
 def client():
+    app.dependency_overrides[get_db] = override_get_db
     return TestClient(app)
 
 
@@ -66,6 +65,18 @@ def auth_headers(client: TestClient) -> dict[str, str]:
         json={"email": email, "password": password},
     )
     assert register_response.status_code == 200
+
+    db = TestingSessionLocal()
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        assert user is not None
+        verify_response = client.get(
+            "/api/v1/auth/verify-email",
+            params={"token": user.verification_token},
+        )
+        assert verify_response.status_code == 200
+    finally:
+        db.close()
 
     login_response = client.post(
         "/api/v1/auth/login",
