@@ -81,6 +81,7 @@ export function Dashboard() {
   const [actionCode, setActionCode] = useState<string | null>(null);
   const [editExpiresAtByCode, setEditExpiresAtByCode] = useState<Record<string, string>>({});
   const [deleteCode, setDeleteCode] = useState<string | null>(null);
+  const [menuCode, setMenuCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -100,6 +101,7 @@ export function Dashboard() {
 
   const clearTransientState = useCallback(() => {
     setDeleteCode(null);
+    setMenuCode(null);
   }, []);
 
   const loadUrls = useCallback(async (transform?: UrlListTransform) => {
@@ -195,7 +197,7 @@ export function Dashboard() {
     }
   };
 
-  const handleUpdate = async (shortCode: string) => {
+  const handleUpdate = async (shortCode: string, nextValue?: string) => {
     if (!token) {
       return;
     }
@@ -205,7 +207,7 @@ export function Dashboard() {
     setNotice(null);
 
     try {
-      const editExpiresAt = editExpiresAtByCode[shortCode] ?? "";
+      const editExpiresAt = nextValue ?? editExpiresAtByCode[shortCode] ?? "";
       const nextExpiresAt = editExpiresAt ? toApiDateTime(editExpiresAt) ?? null : null;
       await updateShortUrl(token, shortCode, {
         expires_at: nextExpiresAt,
@@ -230,6 +232,10 @@ export function Dashboard() {
     }));
     setNotice(null);
     setCreateError(null);
+
+    if (!value || !Number.isNaN(new Date(value).getTime())) {
+      void handleUpdate(url.short_code, value);
+    }
   };
 
   const getExpirationDraft = (url: ShortUrl) =>
@@ -423,9 +429,9 @@ export function Dashboard() {
                 <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                   <div className="divide-y divide-slate-200">
                     {sortedUrls.map((url) => (
-                      <article key={url.id} className="px-4 py-4">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                          <div className="min-w-0 flex-1">
+                      <article key={url.id} className="relative px-4 py-4">
+                        <div className="flex flex-col gap-4 pr-12 lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center">
+                          <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <span
                                 className={[
@@ -441,24 +447,25 @@ export function Dashboard() {
                               </span>
                             </div>
 
-                            <div className="mt-3 grid gap-3 md:grid-cols-2">
-                              <div className="min-w-0">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                  Original URL
-                                </p>
-                                <p
-                                  className="mt-1 truncate text-sm font-semibold text-slate-800"
-                                  title={url.original_url}
-                                >
-                                  {url.original_url}
-                                </p>
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                  Short URL
-                                </p>
+                            <div className="mt-3 min-w-0">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Original URL
+                              </p>
+                              <p
+                                className="mt-1 truncate text-sm font-semibold text-slate-800"
+                                title={url.original_url}
+                              >
+                                {url.original_url}
+                              </p>
+                            </div>
+
+                            <div className="mt-3 min-w-0">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                Short URL
+                              </p>
+                              <div className="mt-1 flex min-w-0 items-center gap-2">
                                 <a
-                                  className="mt-1 block truncate font-mono text-sm text-mint hover:text-blue-700"
+                                  className="min-w-0 truncate font-mono text-sm text-mint hover:text-blue-700"
                                   href={buildOpenShortUrl(url.short_code)}
                                   target="_blank"
                                   rel="noreferrer"
@@ -466,34 +473,49 @@ export function Dashboard() {
                                 >
                                   {buildShortUrl(url.short_code)}
                                 </a>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(url)}
+                                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-100"
+                                  title="Copy short URL"
+                                  aria-label="Copy short URL"
+                                >
+                                  {copiedId === url.id ? (
+                                    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                      <path
+                                        d="m5 10 3 3 7-7"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                    </svg>
+                                  ) : (
+                                    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                      <rect
+                                        x="7"
+                                        y="5"
+                                        width="9"
+                                        height="11"
+                                        rx="2"
+                                        stroke="currentColor"
+                                        strokeWidth="1.7"
+                                      />
+                                      <path
+                                        d="M4 12V6a2 2 0 0 1 2-2h6"
+                                        stroke="currentColor"
+                                        strokeWidth="1.7"
+                                        strokeLinecap="round"
+                                      />
+                                    </svg>
+                                  )}
+                                </button>
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex shrink-0 flex-wrap gap-2 lg:max-w-72 lg:justify-end">
-                            <button type="button" onClick={() => handleCopy(url)} className="btn-secondary px-3">
-                              {copiedId === url.id ? "Copied" : "Copy"}
-                            </button>
-                            <a
-                              className="btn-primary px-3"
-                              href={buildOpenShortUrl(url.short_code)}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Open
-                            </a>
-                            <Link
-                              className="btn-analytics px-3"
-                              to={`/analytics/${encodeURIComponent(url.short_code)}`}
-                            >
-                              Analytics
-                            </Link>
-                          </div>
-                        </div>
-
-                        <div className="mt-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 lg:flex-row lg:items-end lg:justify-between">
                           <label
-                            className="min-w-0 text-xs font-semibold uppercase tracking-wide text-slate-500 lg:w-72"
+                            className="mx-auto w-full max-w-xs text-xs font-semibold uppercase tracking-wide text-slate-500"
                             htmlFor={`edit-expires-${url.id}`}
                           >
                             Expiration
@@ -505,32 +527,54 @@ export function Dashboard() {
                               className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none ring-mint transition focus:border-mint focus:ring-2"
                             />
                           </label>
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              disabled={actionCode === url.short_code}
-                              onClick={() => handleUpdate(url.short_code)}
-                              className="btn-accent px-3"
-                            >
-                              {actionCode === url.short_code ? "Saving..." : "Save"}
-                            </button>
-                            <button
-                              type="button"
-                              disabled={actionCode === url.short_code}
-                              onClick={() => handleToggleActive(url)}
-                              className="btn-secondary px-3"
-                            >
-                              {url.is_active ? "Deactivate" : "Activate"}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeleteCode(url.short_code)}
-                              className="btn-secondary border-red-200 px-3 text-red-700 hover:bg-red-50"
-                            >
-                              Delete
-                            </button>
-                          </div>
                         </div>
+
+                        <div className="absolute right-4 top-4">
+                          <button
+                            type="button"
+                            onClick={() => setMenuCode(menuCode === url.short_code ? null : url.short_code)}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-lg leading-none text-slate-600 transition hover:bg-slate-100"
+                            title="More actions"
+                            aria-label="More actions"
+                            aria-expanded={menuCode === url.short_code}
+                          >
+                            ...
+                          </button>
+
+                          {menuCode === url.short_code && (
+                            <div className="absolute right-0 z-20 mt-2 w-48 rounded-lg border border-slate-200 bg-white p-2 shadow-soft">
+                              <Link
+                                className="block rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                                to={`/analytics/${encodeURIComponent(url.short_code)}`}
+                                onClick={() => setMenuCode(null)}
+                              >
+                                Analytics
+                              </Link>
+                              <button
+                                type="button"
+                                disabled={actionCode === url.short_code}
+                                onClick={() => handleToggleActive(url)}
+                                className="block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+                              >
+                                {url.is_active ? "Deactivate" : "Activate"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setDeleteCode(url.short_code);
+                                  setMenuCode(null);
+                                }}
+                                className="block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-red-700 hover:bg-red-50"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {actionCode === url.short_code && (
+                          <p className="mt-3 text-xs font-medium text-slate-500">Saving changes...</p>
+                        )}
 
                         {deleteCode === url.short_code && (
                           <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4">
