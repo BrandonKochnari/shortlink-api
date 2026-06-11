@@ -485,7 +485,7 @@ export function Dashboard() {
                                   Original URL
                                 </p>
                                 <p
-                                  className="mt-3 truncate text-sm font-semibold text-slate-800"
+                                  className="mt-2 truncate text-sm font-semibold leading-8 text-slate-800"
                                   title={url.original_url}
                                 >
                                   {url.original_url}
@@ -496,7 +496,7 @@ export function Dashboard() {
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                   Short URL
                                 </p>
-                                <div className="mt-3 flex min-w-0 items-center gap-2">
+                                <div className="mt-2 flex min-w-0 items-center gap-2">
                                   <a
                                     className="min-w-0 truncate font-mono text-sm text-mint hover:text-blue-700"
                                     href={buildOpenShortUrl(url.short_code)}
@@ -574,7 +574,7 @@ export function Dashboard() {
                                 </button>
 
                                 {expirationPickerCode === url.short_code && (
-                                  <div className="absolute left-1/2 z-50 mt-2 w-72 -translate-x-1/2 rounded-lg border border-slate-200 bg-white p-3 shadow-soft">
+                                  <div className="absolute bottom-full left-1/2 z-50 mb-2 w-72 -translate-x-1/2 rounded-lg border border-slate-200 bg-white p-3 shadow-soft">
                                     <label
                                       className="text-xs font-semibold uppercase tracking-wide text-slate-500"
                                       htmlFor={`edit-expires-${url.id}`}
