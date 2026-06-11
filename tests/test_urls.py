@@ -85,6 +85,12 @@ def assert_generated_short_code(short_code: str):
     assert re.fullmatch(r"[A-Za-z0-9]{5}", short_code)
 
 
+def assert_no_store(response):
+    assert "no-store" in response.headers["cache-control"]
+    assert response.headers["pragma"] == "no-cache"
+    assert response.headers["expires"] == "0"
+
+
 def created_short_code(response) -> str:
     short_code = response.json()["short_code"]
     assert_generated_short_code(short_code)
@@ -135,6 +141,7 @@ def test_redirect_short_url(client: TestClient):
 
     assert response.status_code in [307, 308]
     assert response.headers["location"] == "https://example.com/"
+    assert_no_store(response)
 
 
 def test_missing_short_code_returns_404(client: TestClient):
@@ -142,6 +149,7 @@ def test_missing_short_code_returns_404(client: TestClient):
 
     assert response.status_code == 404
     assert response.json()["detail"] == "URL Not Found"
+    assert_no_store(response)
 
 
 def test_expired_url_returns_410(client: TestClient):
@@ -261,6 +269,7 @@ def test_deactivate_url_blocks_redirect(client: TestClient):
 
     assert redirect_response.status_code == 410
     assert redirect_response.json()["detail"] == "URL Is Inactive"
+    assert_no_store(redirect_response)
 
 
 def test_activate_url_allows_redirect_again(client: TestClient):

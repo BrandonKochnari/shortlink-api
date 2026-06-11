@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { API_BASE_URL } from "../api/config";
 import {
   activateShortUrl,
+  buildOpenShortUrl,
   buildShortUrl,
   createShortUrl,
   deactivateShortUrl,
@@ -360,7 +361,7 @@ export function Dashboard() {
                 <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <a
                     className="truncate font-mono text-sm text-blue-800 hover:text-blue-950"
-                    href={buildShortUrl(latestUrl.short_code)}
+                    href={buildOpenShortUrl(latestUrl.short_code)}
                     target="_blank"
                     rel="noreferrer"
                     title={buildShortUrl(latestUrl.short_code)}
@@ -442,7 +443,7 @@ export function Dashboard() {
                                 </p>
                                 <a
                                   className="mt-1 block truncate font-mono text-sm text-mint hover:text-blue-700"
-                                  href={buildShortUrl(url.short_code)}
+                                  href={buildOpenShortUrl(url.short_code)}
                                   target="_blank"
                                   rel="noreferrer"
                                   title={buildShortUrl(url.short_code)}
@@ -459,7 +460,7 @@ export function Dashboard() {
                             </button>
                             <a
                               className="btn-primary px-3"
-                              href={buildShortUrl(url.short_code)}
+                              href={buildOpenShortUrl(url.short_code)}
                               target="_blank"
                               rel="noreferrer"
                             >
