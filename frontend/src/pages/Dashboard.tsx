@@ -80,11 +80,13 @@ export function Dashboard() {
   const [isCreating, setIsCreating] = useState(false);
   const [actionCode, setActionCode] = useState<string | null>(null);
   const [editExpiresAtByCode, setEditExpiresAtByCode] = useState<Record<string, string>>({});
+  const [expirationPickerCode, setExpirationPickerCode] = useState<string | null>(null);
   const [deleteCode, setDeleteCode] = useState<string | null>(null);
   const [menuCode, setMenuCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [createNotice, setCreateNotice] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [rowMessage, setRowMessage] = useState<{ shortCode: string; message: string; tone: "success" | "error" } | null>(null);
   const latestFetchId = useRef(0);
 
   const sortedUrls = useMemo(
@@ -102,6 +104,7 @@ export function Dashboard() {
   const clearTransientState = useCallback(() => {
     setDeleteCode(null);
     setMenuCode(null);
+    setExpirationPickerCode(null);
   }, []);
 
   const loadUrls = useCallback(async (transform?: UrlListTransform) => {
@@ -157,7 +160,8 @@ export function Dashboard() {
     }
 
     setCreateError(null);
-    setNotice(null);
+    setCreateNotice(null);
+    setRowMessage(null);
     setIsCreating(true);
 
     try {
@@ -174,7 +178,7 @@ export function Dashboard() {
         return [createdUrl, ...items];
       });
       setLatestUrl(createdUrl);
-      setNotice("Short URL created successfully.");
+      setCreateNotice("Short URL created successfully.");
       setOriginalUrl("");
       setExpiresAt("");
     } catch (err) {
@@ -190,10 +194,14 @@ export function Dashboard() {
     try {
       await navigator.clipboard.writeText(currentShortUrl);
       setCopiedId(url.id);
-      setNotice("Short URL copied to clipboard.");
+      setRowMessage({ shortCode: url.short_code, message: "Copied", tone: "success" });
       window.setTimeout(() => setCopiedId(null), 1800);
     } catch {
-      setCreateError("Unable to copy the short URL.");
+      setRowMessage({
+        shortCode: url.short_code,
+        message: "Unable to copy the short URL.",
+        tone: "error",
+      });
     }
   };
 
@@ -204,7 +212,8 @@ export function Dashboard() {
 
     setActionCode(shortCode);
     setCreateError(null);
-    setNotice(null);
+    setCreateNotice(null);
+    setRowMessage(null);
 
     try {
       const editExpiresAt = nextValue ?? editExpiresAtByCode[shortCode] ?? "";
@@ -217,9 +226,13 @@ export function Dashboard() {
           item.short_code === shortCode ? { ...item, expires_at: nextExpiresAt } : item,
         ),
       );
-      setNotice("URL expiration updated.");
+      setRowMessage({ shortCode, message: nextExpiresAt ? "Expiration updated" : "Expiration cleared", tone: "success" });
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : "Unable to update URL.");
+      setRowMessage({
+        shortCode,
+        message: err instanceof Error ? err.message : "Unable to update URL.",
+        tone: "error",
+      });
     } finally {
       setActionCode(null);
     }
@@ -230,8 +243,9 @@ export function Dashboard() {
       ...currentValues,
       [url.short_code]: value,
     }));
-    setNotice(null);
+    setCreateNotice(null);
     setCreateError(null);
+    setRowMessage(null);
 
     if (!value || !Number.isNaN(new Date(value).getTime())) {
       void handleUpdate(url.short_code, value);
@@ -248,7 +262,8 @@ export function Dashboard() {
 
     setActionCode(url.short_code);
     setCreateError(null);
-    setNotice(null);
+    setCreateNotice(null);
+    setRowMessage(null);
 
     try {
       if (url.is_active) {
@@ -258,7 +273,7 @@ export function Dashboard() {
             item.short_code === url.short_code ? { ...item, is_active: false } : item,
           ),
         );
-        setNotice("URL deactivated.");
+        setRowMessage({ shortCode: url.short_code, message: "Deactivated", tone: "success" });
       } else {
         await activateShortUrl(token, url.short_code);
         await refreshUrlsAfterMutation((items) =>
@@ -266,10 +281,14 @@ export function Dashboard() {
             item.short_code === url.short_code ? { ...item, is_active: true } : item,
           ),
         );
-        setNotice("URL activated.");
+        setRowMessage({ shortCode: url.short_code, message: "Activated", tone: "success" });
       }
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : "Unable to change URL status.");
+      setRowMessage({
+        shortCode: url.short_code,
+        message: err instanceof Error ? err.message : "Unable to change URL status.",
+        tone: "error",
+      });
     } finally {
       setActionCode(null);
     }
@@ -282,16 +301,21 @@ export function Dashboard() {
 
     setActionCode(shortCode);
     setCreateError(null);
-    setNotice(null);
+    setCreateNotice(null);
+    setRowMessage(null);
 
     try {
       await deleteShortUrl(token, shortCode);
       await refreshUrlsAfterMutation((items) =>
         items.filter((item) => item.short_code !== shortCode),
       );
-      setNotice("URL deleted.");
+      setRowMessage(null);
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : "Unable to delete URL.");
+      setRowMessage({
+        shortCode,
+        message: err instanceof Error ? err.message : "Unable to delete URL.",
+        tone: "error",
+      });
     } finally {
       setActionCode(null);
     }
@@ -310,20 +334,17 @@ export function Dashboard() {
       <div className="mx-auto w-full max-w-5xl space-y-6">
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
           <form className="panel panel-body" onSubmit={handleCreate}>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
               <div>
                 <h2 className="text-lg font-semibold text-ink">Create a short URL</h2>
                 <p className="mt-1 text-sm text-slate-500">
                   The short code is generated automatically.
                 </p>
               </div>
-              <button type="submit" disabled={isCreating} className="btn-accent sm:min-w-28">
-                {isCreating ? "Creating..." : "Create"}
-              </button>
             </div>
 
             <div className="mt-5 space-y-3">
-              {notice && <div className="alert-success">{notice}</div>}
+              {createNotice && <div className="alert-success">{createNotice}</div>}
               {createError && <div className="alert-error">{createError}</div>}
             </div>
 
@@ -351,6 +372,12 @@ export function Dashboard() {
                   className="field-input"
                 />
               </label>
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <button type="submit" disabled={isCreating} className="btn-accent sm:min-w-28">
+                {isCreating ? "Creating..." : "Create"}
+              </button>
             </div>
 
             {latestUrl && (
@@ -403,7 +430,7 @@ export function Dashboard() {
               <div>
                 <h2 className="text-lg font-semibold text-ink">Your links</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Copy, open, analyze, and manage each short link.
+                  Copy, analyze, and manage each short link.
                 </p>
               </div>
               <p className="text-sm font-medium text-slate-500">
@@ -420,17 +447,17 @@ export function Dashboard() {
                 <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
                   <p className="text-base font-semibold text-ink">No short URLs yet</p>
                   <p className="mt-2 text-sm text-slate-500">
-                    Create your first short link above. It will appear here with copy, open, and analytics actions.
+                    Create your first short link above. It will appear here with copy and analytics actions.
                   </p>
                 </div>
               )}
 
               {!isLoading && !error && sortedUrls.length > 0 && (
-                <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-                  <div className="divide-y divide-slate-200">
+                <div className="rounded-lg border border-slate-200 bg-white">
+                  <div className="divide-y divide-slate-200 overflow-visible">
                     {sortedUrls.map((url) => (
                       <article key={url.id} className="relative px-4 py-4">
-                        <div className="flex flex-col gap-4 pr-12 lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center">
+                        <div className="flex flex-col gap-4 pr-12 lg:grid lg:grid-cols-[minmax(0,1fr)_220px] lg:items-center">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <span
@@ -442,107 +469,157 @@ export function Dashboard() {
                                 {url.is_active ? "Active" : "Inactive"}
                               </span>
                               <span className="font-mono text-xs text-slate-500">{url.short_code}</span>
-                              <span className="text-xs text-slate-400">
-                                {url.expires_at ? `Expires ${formatDateET(url.expires_at)}` : "No expiration"}
-                              </span>
+                              {rowMessage?.shortCode === url.short_code && (
+                                <span
+                                  className={[
+                                    "text-xs font-semibold",
+                                    rowMessage.tone === "success" ? "text-blue-700" : "text-red-700",
+                                  ].join(" ")}
+                                >
+                                  {rowMessage.message}
+                                </span>
+                              )}
                             </div>
 
-                            <div className="mt-3 min-w-0">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Original URL
-                              </p>
-                              <p
-                                className="mt-1 truncate text-sm font-semibold text-slate-800"
-                                title={url.original_url}
-                              >
-                                {url.original_url}
-                              </p>
-                            </div>
+                            <div className="mt-3 grid gap-4 md:grid-cols-2">
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Original URL
+                                </p>
+                                <p
+                                  className="mt-1 truncate text-sm font-semibold text-slate-800"
+                                  title={url.original_url}
+                                >
+                                  {url.original_url}
+                                </p>
+                              </div>
 
-                            <div className="mt-3 min-w-0">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                Short URL
-                              </p>
-                              <div className="mt-1 flex min-w-0 items-center gap-2">
-                                <a
-                                  className="min-w-0 truncate font-mono text-sm text-mint hover:text-blue-700"
-                                  href={buildOpenShortUrl(url.short_code)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  title={buildShortUrl(url.short_code)}
-                                >
-                                  {buildShortUrl(url.short_code)}
-                                </a>
-                                <button
-                                  type="button"
-                                  onClick={() => handleCopy(url)}
-                                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-100"
-                                  title="Copy short URL"
-                                  aria-label="Copy short URL"
-                                >
-                                  {copiedId === url.id ? (
-                                    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                                      <path
-                                        d="m5 10 3 3 7-7"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                      />
-                                    </svg>
-                                  ) : (
-                                    <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                                      <rect
-                                        x="7"
-                                        y="5"
-                                        width="9"
-                                        height="11"
-                                        rx="2"
-                                        stroke="currentColor"
-                                        strokeWidth="1.7"
-                                      />
-                                      <path
-                                        d="M4 12V6a2 2 0 0 1 2-2h6"
-                                        stroke="currentColor"
-                                        strokeWidth="1.7"
-                                        strokeLinecap="round"
-                                      />
-                                    </svg>
-                                  )}
-                                </button>
+                              <div className="min-w-0">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Short URL
+                                </p>
+                                <div className="mt-1 flex min-w-0 items-center gap-2">
+                                  <a
+                                    className="min-w-0 truncate font-mono text-sm text-mint hover:text-blue-700"
+                                    href={buildOpenShortUrl(url.short_code)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    title={buildShortUrl(url.short_code)}
+                                  >
+                                    {buildShortUrl(url.short_code)}
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopy(url)}
+                                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-100"
+                                    title="Copy short URL"
+                                    aria-label="Copy short URL"
+                                  >
+                                    {copiedId === url.id ? (
+                                      <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                        <path
+                                          d="m5 10 3 3 7-7"
+                                          stroke="currentColor"
+                                          strokeWidth="2"
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                        />
+                                      </svg>
+                                    ) : (
+                                      <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                        <rect
+                                          x="7"
+                                          y="5"
+                                          width="9"
+                                          height="11"
+                                          rx="2"
+                                          stroke="currentColor"
+                                          strokeWidth="1.7"
+                                        />
+                                        <path
+                                          d="M4 12V6a2 2 0 0 1 2-2h6"
+                                          stroke="currentColor"
+                                          strokeWidth="1.7"
+                                          strokeLinecap="round"
+                                        />
+                                      </svg>
+                                    )}
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </div>
 
-                          <label
-                            className="mx-auto w-full max-w-xs text-xs font-semibold uppercase tracking-wide text-slate-500"
-                            htmlFor={`edit-expires-${url.id}`}
-                          >
-                            Expiration
-                            <input
-                              id={`edit-expires-${url.id}`}
-                              type="datetime-local"
-                              value={getExpirationDraft(url)}
-                              onChange={(event) => updateExpirationDraft(url, event.target.value)}
-                              className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none ring-mint transition focus:border-mint focus:ring-2"
-                            />
-                          </label>
+                          <div className="relative mx-auto w-full max-w-xs lg:justify-self-center">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Expiration
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpirationPickerCode(
+                                  expirationPickerCode === url.short_code ? null : url.short_code,
+                                )
+                              }
+                              className="mt-1 flex w-full items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            >
+                              <span>{url.expires_at ? formatDateET(url.expires_at) : "Set expiration"}</span>
+                              <svg className="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                                <path
+                                  d="m6 8 4 4 4-4"
+                                  stroke="currentColor"
+                                  strokeWidth="1.8"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </button>
+
+                            {expirationPickerCode === url.short_code && (
+                              <div className="absolute left-1/2 z-50 mt-2 w-72 -translate-x-1/2 rounded-lg border border-slate-200 bg-white p-3 shadow-soft">
+                                <label
+                                  className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                                  htmlFor={`edit-expires-${url.id}`}
+                                >
+                                  Choose date
+                                  <input
+                                    id={`edit-expires-${url.id}`}
+                                    type="datetime-local"
+                                    value={getExpirationDraft(url)}
+                                    onChange={(event) => updateExpirationDraft(url, event.target.value)}
+                                    className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none ring-mint transition focus:border-mint focus:ring-2"
+                                  />
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => updateExpirationDraft(url, "")}
+                                  className="mt-2 text-sm font-semibold text-slate-600 hover:text-ink"
+                                >
+                                  Clear expiration
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         <div className="absolute right-4 top-4">
                           <button
                             type="button"
                             onClick={() => setMenuCode(menuCode === url.short_code ? null : url.short_code)}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-lg leading-none text-slate-600 transition hover:bg-slate-100"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition hover:bg-slate-100"
                             title="More actions"
                             aria-label="More actions"
                             aria-expanded={menuCode === url.short_code}
                           >
-                            ...
+                            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                              <circle cx="10" cy="4.5" r="1.5" />
+                              <circle cx="10" cy="10" r="1.5" />
+                              <circle cx="10" cy="15.5" r="1.5" />
+                            </svg>
                           </button>
 
                           {menuCode === url.short_code && (
-                            <div className="absolute right-0 z-20 mt-2 w-48 rounded-lg border border-slate-200 bg-white p-2 shadow-soft">
+                            <div className="absolute right-0 z-50 mt-2 w-48 rounded-lg border border-slate-200 bg-white p-2 shadow-soft">
                               <Link
                                 className="block rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                                 to={`/analytics/${encodeURIComponent(url.short_code)}`}
