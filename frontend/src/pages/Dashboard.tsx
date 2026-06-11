@@ -1,8 +1,9 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { API_BASE_URL } from "../api/config";
 import {
   activateShortUrl,
+  buildOpenShortUrl,
   buildShortUrl,
   createShortUrl,
   deactivateShortUrl,
@@ -66,11 +67,12 @@ function UrlSkeleton() {
   );
 }
 
+type UrlListTransform = (items: ShortUrl[]) => ShortUrl[];
+
 export function Dashboard() {
   const { token } = useAuth();
   const [urls, setUrls] = useState<ShortUrl[]>([]);
   const [originalUrl, setOriginalUrl] = useState("");
-  const [customAlias, setCustomAlias] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [latestUrl, setLatestUrl] = useState<ShortUrl | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -83,6 +85,7 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
+  const latestFetchId = useRef(0);
 
   const sortedUrls = useMemo(
     () =>
@@ -102,18 +105,26 @@ export function Dashboard() {
     setDeleteCode(null);
   }, []);
 
-  const loadUrls = useCallback(async () => {
+  const loadUrls = useCallback(async (transform?: UrlListTransform) => {
     if (!token) {
-      return;
+      return [];
     }
 
+    const fetchId = latestFetchId.current + 1;
+    latestFetchId.current = fetchId;
     setError(null);
     const items = await fetchMyUrls(token);
-    setUrls(items);
+    const nextItems = transform ? transform(items) : items;
+
+    if (fetchId === latestFetchId.current) {
+      setUrls(nextItems);
+    }
+
+    return nextItems;
   }, [token]);
 
-  const refreshUrlsAfterMutation = useCallback(async () => {
-    await loadUrls();
+  const refreshUrlsAfterMutation = useCallback(async (transform?: UrlListTransform) => {
+    await loadUrls(transform);
     cancelEditing();
     setLatestUrl(null);
   }, [cancelEditing, loadUrls]);
@@ -153,15 +164,19 @@ export function Dashboard() {
     try {
       const createdUrl = await createShortUrl(token, {
         original_url: originalUrl,
-        ...(customAlias.trim() ? { custom_alias: customAlias.trim() } : {}),
         ...(expiresAt ? { expires_at: toApiDateTime(expiresAt) } : {}),
       });
 
-      await refreshUrlsAfterMutation();
+      await refreshUrlsAfterMutation((items) => {
+        if (items.some((item) => item.short_code === createdUrl.short_code)) {
+          return items;
+        }
+
+        return [createdUrl, ...items];
+      });
       setLatestUrl(createdUrl);
       setNotice("Short URL created successfully.");
       setOriginalUrl("");
-      setCustomAlias("");
       setExpiresAt("");
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Unable to create URL.");
@@ -201,10 +216,15 @@ export function Dashboard() {
     setNotice(null);
 
     try {
+      const nextExpiresAt = editExpiresAt ? toApiDateTime(editExpiresAt) ?? null : null;
       await updateShortUrl(token, shortCode, {
-        expires_at: editExpiresAt ? toApiDateTime(editExpiresAt) ?? null : null,
+        expires_at: nextExpiresAt,
       });
-      await refreshUrlsAfterMutation();
+      await refreshUrlsAfterMutation((items) =>
+        items.map((item) =>
+          item.short_code === shortCode ? { ...item, expires_at: nextExpiresAt } : item,
+        ),
+      );
       setNotice("URL expiration updated.");
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Unable to update URL.");
@@ -225,11 +245,19 @@ export function Dashboard() {
     try {
       if (url.is_active) {
         await deactivateShortUrl(token, url.short_code);
-        await refreshUrlsAfterMutation();
+        await refreshUrlsAfterMutation((items) =>
+          items.map((item) =>
+            item.short_code === url.short_code ? { ...item, is_active: false } : item,
+          ),
+        );
         setNotice("URL deactivated.");
       } else {
         await activateShortUrl(token, url.short_code);
-        await refreshUrlsAfterMutation();
+        await refreshUrlsAfterMutation((items) =>
+          items.map((item) =>
+            item.short_code === url.short_code ? { ...item, is_active: true } : item,
+          ),
+        );
         setNotice("URL activated.");
       }
     } catch (err) {
@@ -250,7 +278,9 @@ export function Dashboard() {
 
     try {
       await deleteShortUrl(token, shortCode);
-      await refreshUrlsAfterMutation();
+      await refreshUrlsAfterMutation((items) =>
+        items.filter((item) => item.short_code !== shortCode),
+      );
       setNotice("URL deleted.");
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Unable to delete URL.");
@@ -285,7 +315,9 @@ export function Dashboard() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-ink">Create a short URL</h2>
-                <p className="mt-1 text-sm text-slate-500">Only the original URL is required.</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  The short code is generated automatically.
+                </p>
               </div>
               <button type="submit" disabled={isCreating} className="btn-accent sm:min-w-28">
                 {isCreating ? "Creating..." : "Create"}
@@ -311,30 +343,16 @@ export function Dashboard() {
                 />
               </label>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="field-label" htmlFor="custom-alias">
-                  Custom alias
-                  <input
-                    id="custom-alias"
-                    type="text"
-                    value={customAlias}
-                    onChange={(event) => setCustomAlias(event.target.value)}
-                    className="field-input"
-                    placeholder="spring-launch"
-                  />
-                </label>
-
-                <label className="field-label" htmlFor="expires-at">
-                  Expires at
-                  <input
-                    id="expires-at"
-                    type="datetime-local"
-                    value={expiresAt}
-                    onChange={(event) => setExpiresAt(event.target.value)}
-                    className="field-input"
-                  />
-                </label>
-              </div>
+              <label className="field-label" htmlFor="expires-at">
+                Expires at
+                <input
+                  id="expires-at"
+                  type="datetime-local"
+                  value={expiresAt}
+                  onChange={(event) => setExpiresAt(event.target.value)}
+                  className="field-input"
+                />
+              </label>
             </div>
 
             {latestUrl && (
@@ -343,7 +361,7 @@ export function Dashboard() {
                 <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <a
                     className="truncate font-mono text-sm text-blue-800 hover:text-blue-950"
-                    href={buildShortUrl(latestUrl.short_code)}
+                    href={buildOpenShortUrl(latestUrl.short_code)}
                     target="_blank"
                     rel="noreferrer"
                     title={buildShortUrl(latestUrl.short_code)}
@@ -425,7 +443,7 @@ export function Dashboard() {
                                 </p>
                                 <a
                                   className="mt-1 block truncate font-mono text-sm text-mint hover:text-blue-700"
-                                  href={buildShortUrl(url.short_code)}
+                                  href={buildOpenShortUrl(url.short_code)}
                                   target="_blank"
                                   rel="noreferrer"
                                   title={buildShortUrl(url.short_code)}
@@ -442,7 +460,7 @@ export function Dashboard() {
                             </button>
                             <a
                               className="btn-primary px-3"
-                              href={buildShortUrl(url.short_code)}
+                              href={buildOpenShortUrl(url.short_code)}
                               target="_blank"
                               rel="noreferrer"
                             >
@@ -503,7 +521,7 @@ export function Dashboard() {
                               </div>
                             </div>
                             <p className="mt-2 text-xs text-slate-500">
-                              Original URL and custom alias editing are not exposed by the current backend API.
+                              Short code and original URL editing are not exposed by the current backend API.
                               Leave expiration blank to clear it.
                             </p>
                           </div>

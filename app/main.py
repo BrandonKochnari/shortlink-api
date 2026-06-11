@@ -11,9 +11,15 @@ from app.services.url_service import get_url_by_short_code, is_url_expired, reco
 
 app = FastAPI(title="Shortlink API")
 
+NO_STORE_HEADERS = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
 allowed_origins = os.getenv(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5173,https://shortlink-generator-app.onrender.com,https://shortlink-api-4ubx.onrender.com",
+    "http://localhost:5173,https://shortlink-generator-app.onrender.com,https://shortlink-c8sm.onrender.com",
 ).split(",")
 
 app.add_middleware(
@@ -49,18 +55,21 @@ def redirect_to_original_url(
         raise HTTPException(
             status_code=404,
             detail="URL Not Found",
+            headers=NO_STORE_HEADERS,
         )
 
     if not url.is_active:
         raise HTTPException(
             status_code=410,
             detail="URL Is Inactive",
+            headers=NO_STORE_HEADERS,
         )
 
     if is_url_expired(url):
         raise HTTPException(
             status_code=410,
             detail="URL Has Expired",
+            headers=NO_STORE_HEADERS,
         )
 
     purpose = (
@@ -80,4 +89,4 @@ def redirect_to_original_url(
     if not is_speculative_request:
         record_click(db, url)
 
-    return RedirectResponse(url.original_url)
+    return RedirectResponse(url.original_url, headers=NO_STORE_HEADERS)
