@@ -283,18 +283,31 @@ Only do that if you are sure the existing schema matches the migration history y
 
 ## Docker
 
-### Start backend and Postgres
+The monorepo has separate Docker builds for each app:
+
+- Backend API: [Dockerfile.backend](/Users/muhammad/Random_Projects/shortlink-api/Dockerfile.backend)
+- Frontend app: [frontend/Dockerfile](/Users/muhammad/Random_Projects/shortlink-api/frontend/Dockerfile)
+
+### Start frontend, backend, and Postgres
 
 ```bash
 docker compose up --build
 ```
 
-The API container runs migrations before starting Uvicorn.
+The API container runs migrations before starting Uvicorn. The frontend container builds the Vite app and serves it with Nginx.
 
 Default ports:
 
 - API: `8000`
+- Frontend: `5173`
 - Postgres host port: `5433`
+
+### Start only one app
+
+```bash
+docker compose up --build api
+docker compose up --build frontend
+```
 
 ## Current Behavior Notes
 
