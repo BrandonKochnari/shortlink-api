@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Analytics } from "./pages/Analytics";
 import { Dashboard } from "./pages/Dashboard";
 import { Login } from "./pages/Login";
@@ -12,10 +13,11 @@ export function App() {
         <Route index element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/analytics" element={<Analytics />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/analytics" element={<Analytics />} />
+        </Route>
       </Route>
     </Routes>
   );
 }
-
