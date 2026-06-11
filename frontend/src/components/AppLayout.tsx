@@ -1,10 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
-const navItems = [
-  { to: "/dashboard", label: "Dashboard" },
-];
-
 export function AppLayout() {
   const navigate = useNavigate();
   const { isAuthenticated, logout, user } = useAuth();
@@ -25,23 +21,6 @@ export function AppLayout() {
             <span>Shortlink</span>
           </NavLink>
           <nav className="flex flex-wrap items-center justify-end gap-2">
-            {isAuthenticated &&
-              navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    [
-                      "rounded-md px-3 py-2 text-sm font-medium transition",
-                      isActive
-                        ? "bg-ink text-white"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-ink",
-                    ].join(" ")
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              ))}
             {isAuthenticated && (
               <div className="flex items-center gap-2">
                 {user?.email && (

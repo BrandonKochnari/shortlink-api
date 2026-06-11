@@ -8,6 +8,7 @@ export type ShortUrl = {
   is_active: boolean;
   expires_at: string | null;
   created_at: string;
+  is_active: boolean;
 };
 
 export type CreateUrlInput = {
@@ -26,6 +27,14 @@ export type UrlAnalytics = {
   expires_at: string | null;
   is_expired: boolean;
 };
+
+export type UpdateUrlInput = {
+  expires_at: string | null;
+};
+
+export function buildShortUrl(shortCode: string) {
+  return `${API_BASE_URL}/${encodeURIComponent(shortCode)}`;
+}
 
 type ApiErrorBody = {
   detail?: string | { msg?: string }[];
@@ -68,7 +77,9 @@ async function request<T>(path: string, token: string, init: RequestInit = {}) {
 }
 
 export function fetchMyUrls(token: string) {
-  return request<ShortUrl[]>("/api/v1/urls/my-urls", token);
+  return request<ShortUrl[]>("/api/v1/urls/my-urls", token, {
+    cache: "no-store",
+  });
 }
 
 export function createShortUrl(token: string, input: CreateUrlInput) {
@@ -85,5 +96,49 @@ export function fetchUrlAnalytics(token: string, shortCode: string) {
   return request<UrlAnalytics>(
     `/api/v1/urls/${encodeURIComponent(shortCode)}/analytics`,
     token,
+  );
+}
+
+export function updateShortUrl(token: string, shortCode: string, input: UpdateUrlInput) {
+  return request<{ message: string; expires_at: string | null }>(
+    `/api/v1/urls/${encodeURIComponent(shortCode)}/expiration`,
+    token,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export function activateShortUrl(token: string, shortCode: string) {
+  return request<{ message: string; short_code: string }>(
+    `/api/v1/urls/${encodeURIComponent(shortCode)}/activate`,
+    token,
+    {
+      method: "PATCH",
+    },
+  );
+}
+
+export function deactivateShortUrl(token: string, shortCode: string) {
+  return request<{ message: string; short_code: string }>(
+    `/api/v1/urls/${encodeURIComponent(shortCode)}/deactivate`,
+    token,
+    {
+      method: "PATCH",
+    },
+  );
+}
+
+export function deleteShortUrl(token: string, shortCode: string) {
+  return request<{ message: string }>(
+    `/api/v1/urls/${encodeURIComponent(shortCode)}`,
+    token,
+    {
+      method: "DELETE",
+    },
   );
 }
