@@ -5,6 +5,7 @@ export type ShortUrl = {
   original_url: string;
   short_code: string;
   short_url: string;
+  is_active: boolean;
   expires_at: string | null;
   created_at: string;
 };

@@ -59,7 +59,7 @@ export function Dashboard() {
   );
 
   const expiringCount = urls.filter((url) => url.expires_at).length;
-  const latestCreated = sortedUrls[0]?.created_at ? formatDateET(sortedUrls[0].created_at) : "No links yet";
+  const activeCount = urls.filter((url) => url.is_active).length;
 
   useEffect(() => {
     if (!token) {
@@ -144,23 +144,18 @@ export function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="mx-auto grid w-full max-w-5xl gap-4 md:grid-cols-2">
         <article className="panel panel-body">
           <p className="text-sm font-medium text-slate-500">Total links</p>
           <p className="mt-3 text-3xl font-semibold text-ink">{urls.length}</p>
         </article>
         <article className="panel panel-body">
-          <p className="text-sm font-medium text-slate-500">With expiration</p>
-          <p className="mt-3 text-3xl font-semibold text-ink">{expiringCount}</p>
-        </article>
-        <article className="panel panel-body">
-          <p className="text-sm font-medium text-slate-500">Latest link</p>
-          <p className="mt-3 text-sm font-semibold text-ink">{latestCreated}</p>
+          <p className="text-sm font-medium text-slate-500">Active links</p>
+          <p className="mt-3 text-3xl font-semibold text-ink">{activeCount}</p>
         </article>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-6">
+      <div className="mx-auto w-full max-w-5xl space-y-6">
           <form className="panel panel-body" onSubmit={handleCreate}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
@@ -308,9 +303,7 @@ export function Dashboard() {
               )}
             </div>
           </div>
-        </div>
-
-        <aside className="panel panel-body h-fit">
+        <aside className="panel panel-body">
           <h2 className="text-lg font-semibold text-ink">API connection</h2>
           <p className="mt-3 text-sm leading-6 text-slate-600">Authenticated requests use this deployed backend.</p>
           <p className="mt-4 break-all rounded-md bg-slate-100 p-3 font-mono text-xs text-slate-700">
