@@ -479,13 +479,13 @@ export function Dashboard() {
                               )}
                             </div>
 
-                            <div className="mt-3 grid items-start gap-4 md:grid-cols-[220px_380px_150px] md:gap-4">
+                            <div className="mt-3 grid items-start gap-4 md:grid-cols-[220px_380px_240px] md:gap-4">
                               <div className="min-w-0">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                   Original URL
                                 </p>
                                 <p
-                                  className="mt-1 truncate text-sm font-semibold text-slate-800"
+                                  className="mt-3 truncate text-sm font-semibold text-slate-800"
                                   title={url.original_url}
                                 >
                                   {url.original_url}
@@ -496,7 +496,7 @@ export function Dashboard() {
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                   Short URL
                                 </p>
-                                <div className="mt-1 flex min-w-0 items-center gap-2">
+                                <div className="mt-3 flex min-w-0 items-center gap-2">
                                   <a
                                     className="min-w-0 truncate font-mono text-sm text-mint hover:text-blue-700"
                                     href={buildOpenShortUrl(url.short_code)}
@@ -546,7 +546,7 @@ export function Dashboard() {
                                 </div>
                               </div>
 
-                              <div className="relative w-36" data-floating-control>
+                              <div className="relative w-full" data-floating-control>
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                   Expiration
                                 </p>
