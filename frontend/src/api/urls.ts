@@ -12,7 +12,6 @@ export type ShortUrl = {
 
 export type CreateUrlInput = {
   original_url: string;
-  custom_alias?: string;
   expires_at?: string;
 };
 

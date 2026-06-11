@@ -39,19 +39,10 @@ def create_short_url(db: Session, url_data: URLCreate, current_user: User, base_
 
     base_url = (base_url or get_base_url()).rstrip("/")
 
-    if url_data.custom_alias:
-        existing_url = get_url_by_short_code(db, url_data.custom_alias)
+    short_code = generate_short_code()
 
-        if existing_url:
-            raise ValueError("Custom Alias Already Exists")
-
-        short_code = url_data.custom_alias
-
-    else:
+    while get_url_by_short_code(db, short_code):
         short_code = generate_short_code()
-
-        while get_url_by_short_code(db, short_code):
-            short_code = generate_short_code()
 
     new_url = URL(
         user_id = current_user.id,
