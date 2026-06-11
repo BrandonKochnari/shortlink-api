@@ -15,6 +15,17 @@ export type CreateUrlInput = {
   expires_at?: string;
 };
 
+export type UrlAnalytics = {
+  short_code: string;
+  original_url: string;
+  clicks: number;
+  created_at: string;
+  last_clicked: string | null;
+  is_active: boolean;
+  expires_at: string | null;
+  is_expired: boolean;
+};
+
 type ApiErrorBody = {
   detail?: string | { msg?: string }[];
   message?: string;
@@ -69,3 +80,9 @@ export function createShortUrl(token: string, input: CreateUrlInput) {
   });
 }
 
+export function fetchUrlAnalytics(token: string, shortCode: string) {
+  return request<UrlAnalytics>(
+    `/api/v1/urls/${encodeURIComponent(shortCode)}/analytics`,
+    token,
+  );
+}

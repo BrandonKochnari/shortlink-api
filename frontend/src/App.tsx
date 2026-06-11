@@ -15,7 +15,8 @@ export function App() {
         <Route path="/register" element={<Register />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/analytics" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/analytics/:shortCode" element={<Analytics />} />
         </Route>
       </Route>
     </Routes>

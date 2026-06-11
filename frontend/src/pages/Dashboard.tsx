@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { API_BASE_URL } from "../api/config";
 import { createShortUrl, fetchMyUrls, ShortUrl } from "../api/urls";
 import { useAuth } from "../auth/AuthContext";
@@ -237,7 +238,7 @@ export function Dashboard() {
 
             {!isLoading && !error && sortedUrls.length > 0 && (
               <div className="mt-6 overflow-hidden rounded-lg border border-slate-200">
-                <div className="hidden bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 md:grid md:grid-cols-[1fr_1fr_150px_150px]">
+                <div className="hidden bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 md:grid md:grid-cols-[1fr_1fr_150px_230px]">
                   <span>Original</span>
                   <span>Short URL</span>
                   <span>Expires</span>
@@ -247,7 +248,7 @@ export function Dashboard() {
                   {sortedUrls.map((url) => (
                     <article
                       key={url.id}
-                      className="grid gap-3 px-4 py-4 md:grid-cols-[1fr_1fr_150px_150px] md:items-center"
+                      className="grid gap-3 px-4 py-4 md:grid-cols-[1fr_1fr_150px_230px] md:items-center"
                     >
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-slate-800">{url.original_url}</p>
@@ -278,6 +279,12 @@ export function Dashboard() {
                         >
                           Open
                         </a>
+                        <Link
+                          className="rounded-md bg-coral px-3 py-2 text-sm font-medium text-white transition hover:bg-red-600"
+                          to={`/analytics/${encodeURIComponent(url.short_code)}`}
+                        >
+                          View analytics
+                        </Link>
                       </div>
                     </article>
                   ))}
@@ -298,4 +305,3 @@ export function Dashboard() {
     </section>
   );
 }
-
