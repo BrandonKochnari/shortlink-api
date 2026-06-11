@@ -70,7 +70,6 @@ export function Dashboard() {
   const { token } = useAuth();
   const [urls, setUrls] = useState<ShortUrl[]>([]);
   const [originalUrl, setOriginalUrl] = useState("");
-  const [customAlias, setCustomAlias] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [latestUrl, setLatestUrl] = useState<ShortUrl | null>(null);
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -153,7 +152,6 @@ export function Dashboard() {
     try {
       const createdUrl = await createShortUrl(token, {
         original_url: originalUrl,
-        ...(customAlias.trim() ? { custom_alias: customAlias.trim() } : {}),
         ...(expiresAt ? { expires_at: toApiDateTime(expiresAt) } : {}),
       });
 
@@ -161,7 +159,6 @@ export function Dashboard() {
       setLatestUrl(createdUrl);
       setNotice("Short URL created successfully.");
       setOriginalUrl("");
-      setCustomAlias("");
       setExpiresAt("");
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Unable to create URL.");
@@ -285,7 +282,9 @@ export function Dashboard() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-ink">Create a short URL</h2>
-                <p className="mt-1 text-sm text-slate-500">Only the original URL is required.</p>
+                <p className="mt-1 text-sm text-slate-500">
+                  The short code is generated automatically.
+                </p>
               </div>
               <button type="submit" disabled={isCreating} className="btn-accent sm:min-w-28">
                 {isCreating ? "Creating..." : "Create"}
@@ -311,30 +310,16 @@ export function Dashboard() {
                 />
               </label>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="field-label" htmlFor="custom-alias">
-                  Custom alias
-                  <input
-                    id="custom-alias"
-                    type="text"
-                    value={customAlias}
-                    onChange={(event) => setCustomAlias(event.target.value)}
-                    className="field-input"
-                    placeholder="spring-launch"
-                  />
-                </label>
-
-                <label className="field-label" htmlFor="expires-at">
-                  Expires at
-                  <input
-                    id="expires-at"
-                    type="datetime-local"
-                    value={expiresAt}
-                    onChange={(event) => setExpiresAt(event.target.value)}
-                    className="field-input"
-                  />
-                </label>
-              </div>
+              <label className="field-label" htmlFor="expires-at">
+                Expires at
+                <input
+                  id="expires-at"
+                  type="datetime-local"
+                  value={expiresAt}
+                  onChange={(event) => setExpiresAt(event.target.value)}
+                  className="field-input"
+                />
+              </label>
             </div>
 
             {latestUrl && (
@@ -503,7 +488,7 @@ export function Dashboard() {
                               </div>
                             </div>
                             <p className="mt-2 text-xs text-slate-500">
-                              Original URL and custom alias editing are not exposed by the current backend API.
+                              Short code and original URL editing are not exposed by the current backend API.
                               Leave expiration blank to clear it.
                             </p>
                           </div>
