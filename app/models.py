@@ -34,9 +34,6 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    email_verified = Column(Boolean, default=False, nullable=False)
-    verification_token = Column(String, unique=True, index=True, nullable=True)
-    verification_token_expires_at = Column(DateTime, nullable=True)
 
 class Click(Base):
     __tablename__ = "clicks"

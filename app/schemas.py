@@ -26,9 +26,6 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-class ResendVerificationRequest(BaseModel):
-    email: EmailStr
-
 class Token(BaseModel):
     access_token: str 
     token_type: str
@@ -39,7 +36,6 @@ class UserResponse(BaseModel):
     id: int
     email: EmailStr
     created_at: datetime
-    email_verified: bool
 
 class URLAnalytics(BaseModel):
     short_code: str
