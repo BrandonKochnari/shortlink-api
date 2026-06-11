@@ -96,6 +96,7 @@ def test_create_short_url_random_code(client: TestClient):
     assert data["short_code"]
     assert data["short_url"].endswith(data["short_code"])
     assert data["expires_at"] is None
+    assert data["is_active"] is True
 
 
 def test_create_short_url_with_custom_alias(client: TestClient):
@@ -189,6 +190,7 @@ def test_my_urls_returns_authenticated_users_urls(client: TestClient):
     assert isinstance(data, list)
     assert len(data) == 1
     assert data[0]["short_code"] == alias
+    assert data[0]["is_active"] is True
 
 def test_analytics_returns_click_count(client: TestClient):
     headers = auth_headers(client)
