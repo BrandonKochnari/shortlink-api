@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { API_BASE_URL } from "../api/config";
 import {
   activateShortUrl,
+  buildShortUrl,
   createShortUrl,
   deactivateShortUrl,
   deleteShortUrl,
@@ -164,8 +165,10 @@ export function Dashboard() {
   };
 
   const handleCopy = async (url: ShortUrl) => {
+    const currentShortUrl = buildShortUrl(url.short_code);
+
     try {
-      await navigator.clipboard.writeText(url.short_url);
+      await navigator.clipboard.writeText(currentShortUrl);
       setCopiedId(url.id);
       setNotice("Short URL copied to clipboard.");
       window.setTimeout(() => setCopiedId(null), 1800);
@@ -349,12 +352,12 @@ export function Dashboard() {
                 <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <a
                     className="truncate font-mono text-sm text-teal-800 hover:text-teal-950"
-                    href={latestUrl.short_url}
+                    href={buildShortUrl(latestUrl.short_code)}
                     target="_blank"
                     rel="noreferrer"
-                    title={latestUrl.short_url}
+                    title={buildShortUrl(latestUrl.short_code)}
                   >
-                    {latestUrl.short_url}
+                    {buildShortUrl(latestUrl.short_code)}
                   </a>
                   <button type="button" onClick={() => handleCopy(latestUrl)} className="btn-secondary">
                     {copiedId === latestUrl.id ? "Copied" : "Copy"}
@@ -431,12 +434,12 @@ export function Dashboard() {
                                 </p>
                                 <a
                                   className="mt-1 block truncate font-mono text-sm text-mint hover:text-teal-700"
-                                  href={url.short_url}
+                                  href={buildShortUrl(url.short_code)}
                                   target="_blank"
                                   rel="noreferrer"
-                                  title={url.short_url}
+                                  title={buildShortUrl(url.short_code)}
                                 >
-                                  {url.short_url}
+                                  {buildShortUrl(url.short_code)}
                                 </a>
                               </div>
                             </div>
@@ -446,7 +449,12 @@ export function Dashboard() {
                             <button type="button" onClick={() => handleCopy(url)} className="btn-secondary px-3">
                               {copiedId === url.id ? "Copied" : "Copy"}
                             </button>
-                            <a className="btn-primary px-3" href={url.short_url} target="_blank" rel="noreferrer">
+                            <a
+                              className="btn-primary px-3"
+                              href={buildShortUrl(url.short_code)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
                               Open
                             </a>
                             <Link

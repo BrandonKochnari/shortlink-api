@@ -31,6 +31,10 @@ export type UpdateUrlInput = {
   expires_at: string | null;
 };
 
+export function buildShortUrl(shortCode: string) {
+  return `${API_BASE_URL}/${encodeURIComponent(shortCode)}`;
+}
+
 type ApiErrorBody = {
   detail?: string | { msg?: string }[];
   message?: string;
