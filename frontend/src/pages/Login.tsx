@@ -12,12 +12,13 @@ export function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, isInitializing, login } = useAuth();
+  const locationState = location.state as LoginLocationState | null;
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const from = (location.state as LoginLocationState | null)?.from?.pathname ?? "/dashboard";
+  const from = locationState?.from?.pathname ?? "/dashboard";
 
   if (!isInitializing && isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
