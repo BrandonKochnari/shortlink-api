@@ -60,8 +60,11 @@ async function parseError(response: Response) {
 
 async function request<T>(path: string, token: string, init: RequestInit = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    cache: "no-store",
     ...init,
     headers: {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
       ...init.headers,
       Authorization: `Bearer ${token}`,
     },
@@ -75,7 +78,7 @@ async function request<T>(path: string, token: string, init: RequestInit = {}) {
 }
 
 export function fetchMyUrls(token: string) {
-  return request<ShortUrl[]>("/api/v1/urls/my-urls", token, {
+  return request<ShortUrl[]>(`/api/v1/urls/my-urls?_=${Date.now()}`, token, {
     cache: "no-store",
   });
 }
