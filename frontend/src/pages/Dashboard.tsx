@@ -101,6 +101,17 @@ export function Dashboard() {
   const expiringCount = urls.filter((url) => url.expires_at).length;
   const isDeleting = (shortCode: string) => actionCode === shortCode && actionType === "delete";
   const isChangingStatus = (shortCode: string) => actionCode === shortCode && actionType === "status";
+  const apiConnectionCard = (
+    <div className="panel panel-body flex-1">
+      <h2 className="text-lg font-semibold text-ink">API connection</h2>
+      <p className="mt-3 text-sm leading-6 text-slate-600">
+        Requests are sent to this backend.
+      </p>
+      <p className="mt-4 break-all rounded-md bg-slate-100 p-3 font-mono text-xs text-slate-700">
+        {API_BASE_URL}
+      </p>
+    </div>
+  );
 
   const clearTransientState = useCallback(() => {
     setDeleteCode(null);
@@ -420,14 +431,8 @@ export function Dashboard() {
               </article>
             </div>
 
-            <div className="panel panel-body flex-1">
-              <h2 className="text-lg font-semibold text-ink">API connection</h2>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                Requests are sent to this backend.
-              </p>
-              <p className="mt-4 break-all rounded-md bg-slate-100 p-3 font-mono text-xs text-slate-700">
-                {API_BASE_URL}
-              </p>
+            <div className="hidden flex-1 xl:flex">
+              {apiConnectionCard}
             </div>
           </aside>
         </div>
@@ -637,7 +642,7 @@ export function Dashboard() {
                           </button>
 
                           {menuCode === url.short_code && (
-                            <div className="absolute right-0 z-50 mt-2 w-48 rounded-lg border border-slate-200 bg-white p-2 shadow-soft">
+                            <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-lg border border-slate-200 bg-white p-2 shadow-soft sm:left-full sm:right-auto sm:top-0 sm:ml-2 sm:mt-0">
                               <Link
                                 className="block rounded-md px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                                 to={`/analytics/${encodeURIComponent(url.short_code)}`}
@@ -691,6 +696,10 @@ export function Dashboard() {
                 </div>
               )}
             </div>
+          </div>
+
+          <div className="xl:hidden">
+            {apiConnectionCard}
           </div>
       </div>
     </section>
