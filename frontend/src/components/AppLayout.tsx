@@ -16,10 +16,13 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen bg-cloud text-ink">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <NavLink to="/dashboard" className="text-xl font-semibold tracking-normal">
-            Shortlink
+      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+          <NavLink to="/dashboard" className="flex items-center gap-2 text-xl font-semibold tracking-normal">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-ink text-sm font-bold text-white">
+              S
+            </span>
+            <span>Shortlink</span>
           </NavLink>
           <nav className="flex flex-wrap items-center justify-end gap-2">
             {isAuthenticated &&
@@ -49,7 +52,7 @@ export function AppLayout() {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+                  className="btn-secondary"
                 >
                   Logout
                 </button>
@@ -58,7 +61,7 @@ export function AppLayout() {
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
         <Outlet />
       </main>
     </div>

@@ -32,66 +32,63 @@ export function Login() {
       await login(email, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to log in");
+      setError(err instanceof Error ? err.message : "Unable to log in. Check your email and password.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <section className="mx-auto grid max-w-4xl gap-8 lg:grid-cols-[1fr_420px] lg:items-center">
+    <section className="mx-auto grid max-w-5xl gap-8 py-6 lg:grid-cols-[1fr_420px] lg:items-center lg:py-12">
       <div>
-        <p className="text-sm font-medium uppercase tracking-wide text-mint">Shortlink</p>
-        <h1 className="mt-2 text-4xl font-semibold tracking-normal">Sign in to your workspace</h1>
-        <p className="mt-4 text-slate-600">
-          Access your links and analytics using your Shortlink account.
+        <p className="eyebrow">Shortlink</p>
+        <h1 className="page-title">Sign in to manage your links</h1>
+        <p className="page-copy">
+          Create short URLs, copy them quickly, and review click analytics from one focused workspace.
         </p>
       </div>
 
-      <form className="rounded-lg border border-slate-200 bg-white p-6 shadow-soft" onSubmit={handleSubmit}>
-        {error && (
-          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+      <form className="panel panel-body" onSubmit={handleSubmit}>
+        <div className="mb-5">
+          <h2 className="text-xl font-semibold text-ink">Welcome back</h2>
+          <p className="mt-1 text-sm text-slate-500">Use your account email and password.</p>
+        </div>
 
-        <label className="block text-sm font-medium text-slate-700" htmlFor="email">
+        {error && <div className="alert-error mb-4">{error}</div>}
+
+        <label className="field-label" htmlFor="email">
           Email
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="field-input"
+            placeholder="you@example.com"
+            autoComplete="email"
+            required
+          />
         </label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 outline-none ring-mint transition focus:ring-2"
-          placeholder="you@example.com"
-          autoComplete="email"
-          required
-        />
 
-        <label className="mt-4 block text-sm font-medium text-slate-700" htmlFor="password">
+        <label className="field-label mt-4" htmlFor="password">
           Password
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="field-input"
+            placeholder="Password"
+            autoComplete="current-password"
+            required
+          />
         </label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 outline-none ring-mint transition focus:ring-2"
-          placeholder="Password"
-          autoComplete="current-password"
-          required
-        />
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="mt-6 w-full rounded-md bg-ink px-4 py-2 font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-        >
+        <button type="submit" disabled={isSubmitting} className="btn-primary mt-6 w-full">
           {isSubmitting ? "Logging in..." : "Log in"}
         </button>
 
-        <p className="mt-4 text-center text-sm text-slate-600">
+        <p className="mt-5 text-center text-sm text-slate-600">
           Need an account?{" "}
           <Link className="font-semibold text-mint hover:text-teal-700" to="/register">
             Register
@@ -101,4 +98,3 @@ export function Login() {
     </section>
   );
 }
-

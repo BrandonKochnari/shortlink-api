@@ -23,6 +23,28 @@ function toApiDateTime(value: string) {
   return new Date(value).toISOString();
 }
 
+function UrlSkeleton() {
+  return (
+    <div className="divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200">
+      {[0, 1, 2].map((item) => (
+        <div key={item} className="grid gap-3 px-4 py-4 md:grid-cols-[1.1fr_1fr_140px_240px]">
+          <div>
+            <div className="skeleton h-4 w-3/4" />
+            <div className="skeleton mt-2 h-3 w-28" />
+          </div>
+          <div className="skeleton h-4 w-full" />
+          <div className="skeleton h-4 w-24" />
+          <div className="flex gap-2">
+            <div className="skeleton h-10 w-16" />
+            <div className="skeleton h-10 w-16" />
+            <div className="skeleton h-10 w-28" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function Dashboard() {
   const { token } = useAuth();
   const [urls, setUrls] = useState<ShortUrl[]>([]);
@@ -34,6 +56,7 @@ export function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
 
   const sortedUrls = useMemo(
@@ -44,6 +67,9 @@ export function Dashboard() {
       ),
     [urls],
   );
+
+  const expiringCount = urls.filter((url) => url.expires_at).length;
+  const latestCreated = sortedUrls[0]?.created_at ? formatDate(sortedUrls[0].created_at) : "No links yet";
 
   useEffect(() => {
     if (!token) {
@@ -62,7 +88,7 @@ export function Dashboard() {
       })
       .catch((err) => {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : "Unable to load URLs");
+          setError(err instanceof Error ? err.message : "Unable to load URLs.");
         }
       })
       .finally(() => {
@@ -84,6 +110,7 @@ export function Dashboard() {
     }
 
     setCreateError(null);
+    setNotice(null);
     setIsCreating(true);
 
     try {
@@ -95,11 +122,12 @@ export function Dashboard() {
 
       setUrls((currentUrls) => [createdUrl, ...currentUrls]);
       setLatestUrl(createdUrl);
+      setNotice("Short URL created successfully.");
       setOriginalUrl("");
       setCustomAlias("");
       setExpiresAt("");
     } catch (err) {
-      setCreateError(err instanceof Error ? err.message : "Unable to create URL");
+      setCreateError(err instanceof Error ? err.message : "Unable to create URL.");
     } finally {
       setIsCreating(false);
     }
@@ -109,88 +137,99 @@ export function Dashboard() {
     try {
       await navigator.clipboard.writeText(url.short_url);
       setCopiedId(url.id);
+      setNotice("Short URL copied to clipboard.");
       window.setTimeout(() => setCopiedId(null), 1800);
     } catch {
-      setCreateError("Unable to copy the short URL");
+      setCreateError("Unable to copy the short URL.");
     }
   };
 
   return (
     <section className="space-y-6">
-      <div>
-        <p className="text-sm font-medium uppercase tracking-wide text-mint">Dashboard</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-normal">Manage short links</h1>
-        <p className="mt-3 max-w-2xl text-slate-600">
-          Create short URLs and manage the links attached to your account.
-        </p>
+      <div className="page-header">
+        <div>
+          <p className="eyebrow">Dashboard</p>
+          <h1 className="page-title">Manage short links</h1>
+          <p className="page-copy">Create, copy, open, and inspect analytics for your shortened URLs.</p>
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="grid gap-4 md:grid-cols-3">
+        <article className="panel panel-body">
+          <p className="text-sm font-medium text-slate-500">Total links</p>
+          <p className="mt-3 text-3xl font-semibold text-ink">{urls.length}</p>
+        </article>
+        <article className="panel panel-body">
+          <p className="text-sm font-medium text-slate-500">With expiration</p>
+          <p className="mt-3 text-3xl font-semibold text-ink">{expiringCount}</p>
+        </article>
+        <article className="panel panel-body">
+          <p className="text-sm font-medium text-slate-500">Latest link</p>
+          <p className="mt-3 text-sm font-semibold text-ink">{latestCreated}</p>
+        </article>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-6">
-          <form className="rounded-lg border border-slate-200 bg-white p-6 shadow-soft" onSubmit={handleCreate}>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <form className="panel panel-body" onSubmit={handleCreate}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h2 className="text-lg font-semibold">Create a short URL</h2>
-                <p className="mt-1 text-sm text-slate-500">Add an alias or expiration when needed.</p>
+                <h2 className="text-lg font-semibold text-ink">Create a short URL</h2>
+                <p className="mt-1 text-sm text-slate-500">Only the original URL is required.</p>
               </div>
-              <button
-                type="submit"
-                disabled={isCreating}
-                className="rounded-md bg-mint px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-400"
-              >
+              <button type="submit" disabled={isCreating} className="btn-accent sm:min-w-28">
                 {isCreating ? "Creating..." : "Create"}
               </button>
             </div>
 
-            {createError && (
-              <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {createError}
-              </div>
-            )}
+            <div className="mt-5 space-y-3">
+              {notice && <div className="alert-success">{notice}</div>}
+              {createError && <div className="alert-error">{createError}</div>}
+            </div>
 
             <div className="mt-5 grid gap-4">
-              <label className="block text-sm font-medium text-slate-700" htmlFor="original-url">
+              <label className="field-label" htmlFor="original-url">
                 Original URL
                 <input
                   id="original-url"
                   type="url"
                   value={originalUrl}
                   onChange={(event) => setOriginalUrl(event.target.value)}
-                  className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 font-normal outline-none ring-mint transition focus:ring-2"
+                  className="field-input"
                   placeholder="https://example.com/article"
                   required
                 />
               </label>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="block text-sm font-medium text-slate-700" htmlFor="custom-alias">
+                <label className="field-label" htmlFor="custom-alias">
                   Custom alias
                   <input
                     id="custom-alias"
                     type="text"
                     value={customAlias}
                     onChange={(event) => setCustomAlias(event.target.value)}
-                    className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 font-normal outline-none ring-mint transition focus:ring-2"
+                    className="field-input"
                     placeholder="spring-launch"
                   />
                 </label>
 
-                <label className="block text-sm font-medium text-slate-700" htmlFor="expires-at">
+                <label className="field-label" htmlFor="expires-at">
                   Expires at
                   <input
                     id="expires-at"
                     type="datetime-local"
                     value={expiresAt}
                     onChange={(event) => setExpiresAt(event.target.value)}
-                    className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 font-normal outline-none ring-mint transition focus:ring-2"
+                    className="field-input"
                   />
                 </label>
               </div>
             </div>
 
             {latestUrl && (
-              <div className="mt-5 rounded-md border border-teal-200 bg-teal-50 p-4">
-                <p className="text-sm font-medium text-teal-900">Generated short URL</p>
+              <div className="mt-5 rounded-lg border border-teal-200 bg-teal-50 p-4">
+                <p className="text-sm font-semibold text-teal-900">Generated short URL</p>
                 <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <a
                     className="break-all font-mono text-sm text-teal-800 hover:text-teal-950"
@@ -200,11 +239,7 @@ export function Dashboard() {
                   >
                     {latestUrl.short_url}
                   </a>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(latestUrl)}
-                    className="rounded-md border border-teal-300 px-3 py-2 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
-                  >
+                  <button type="button" onClick={() => handleCopy(latestUrl)} className="btn-secondary">
                     {copiedId === latestUrl.id ? "Copied" : "Copy"}
                   </button>
                 </div>
@@ -212,91 +247,82 @@ export function Dashboard() {
             )}
           </form>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-soft">
+          <div className="panel panel-body">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-lg font-semibold">Your links</h2>
-              <p className="text-sm text-slate-500">{urls.length} total</p>
+              <div>
+                <h2 className="text-lg font-semibold text-ink">Your links</h2>
+                <p className="mt-1 text-sm text-slate-500">Newest links appear first.</p>
+              </div>
+              <p className="text-sm font-medium text-slate-500">{urls.length} total</p>
             </div>
 
-            {isLoading && (
-              <div className="mt-6 rounded-md border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
-                Loading URLs...
-              </div>
-            )}
+            <div className="mt-6">
+              {isLoading && <UrlSkeleton />}
 
-            {error && (
-              <div className="mt-6 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {error}
-              </div>
-            )}
+              {error && <div className="alert-error">{error}</div>}
 
-            {!isLoading && !error && sortedUrls.length === 0 && (
-              <div className="mt-6 rounded-md border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
-                No short URLs yet.
-              </div>
-            )}
-
-            {!isLoading && !error && sortedUrls.length > 0 && (
-              <div className="mt-6 overflow-hidden rounded-lg border border-slate-200">
-                <div className="hidden bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 md:grid md:grid-cols-[1fr_1fr_150px_230px]">
-                  <span>Original</span>
-                  <span>Short URL</span>
-                  <span>Expires</span>
-                  <span>Actions</span>
+              {!isLoading && !error && sortedUrls.length === 0 && (
+                <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                  <p className="text-base font-semibold text-ink">No short URLs yet</p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    Create your first short link above. It will appear here with copy, open, and analytics actions.
+                  </p>
                 </div>
-                <div className="divide-y divide-slate-200">
-                  {sortedUrls.map((url) => (
-                    <article
-                      key={url.id}
-                      className="grid gap-3 px-4 py-4 md:grid-cols-[1fr_1fr_150px_230px] md:items-center"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-slate-800">{url.original_url}</p>
-                        <p className="mt-1 text-xs text-slate-500">Code: {url.short_code}</p>
-                      </div>
-                      <a
-                        className="min-w-0 break-all font-mono text-sm text-mint hover:text-teal-700"
-                        href={url.short_url}
-                        target="_blank"
-                        rel="noreferrer"
+              )}
+
+              {!isLoading && !error && sortedUrls.length > 0 && (
+                <div className="overflow-hidden rounded-lg border border-slate-200">
+                  <div className="hidden bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 lg:grid lg:grid-cols-[1.1fr_1fr_140px_240px]">
+                    <span>Original</span>
+                    <span>Short URL</span>
+                    <span>Expires</span>
+                    <span>Actions</span>
+                  </div>
+                  <div className="divide-y divide-slate-200">
+                    {sortedUrls.map((url) => (
+                      <article
+                        key={url.id}
+                        className="grid gap-4 px-4 py-4 lg:grid-cols-[1.1fr_1fr_140px_240px] lg:items-center"
                       >
-                        {url.short_url}
-                      </a>
-                      <p className="text-sm text-slate-600">{formatDate(url.expires_at)}</p>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(url)}
-                          className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-                        >
-                          {copiedId === url.id ? "Copied" : "Copy"}
-                        </button>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-800">{url.original_url}</p>
+                          <p className="mt-1 font-mono text-xs text-slate-500">{url.short_code}</p>
+                        </div>
                         <a
-                          className="rounded-md bg-ink px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+                          className="min-w-0 break-all font-mono text-sm text-mint hover:text-teal-700"
                           href={url.short_url}
                           target="_blank"
                           rel="noreferrer"
                         >
-                          Open
+                          {url.short_url}
                         </a>
-                        <Link
-                          className="rounded-md bg-coral px-3 py-2 text-sm font-medium text-white transition hover:bg-red-600"
-                          to={`/analytics/${encodeURIComponent(url.short_code)}`}
-                        >
-                          View analytics
-                        </Link>
-                      </div>
-                    </article>
-                  ))}
+                        <p className="text-sm text-slate-600">{formatDate(url.expires_at)}</p>
+                        <div className="flex flex-wrap gap-2">
+                          <button type="button" onClick={() => handleCopy(url)} className="btn-secondary px-3">
+                            {copiedId === url.id ? "Copied" : "Copy"}
+                          </button>
+                          <a className="btn-primary px-3" href={url.short_url} target="_blank" rel="noreferrer">
+                            Open
+                          </a>
+                          <Link
+                            className="btn-coral px-3"
+                            to={`/analytics/${encodeURIComponent(url.short_code)}`}
+                          >
+                            Analytics
+                          </Link>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
-        <aside className="rounded-lg border border-slate-200 bg-white p-6 shadow-soft">
-          <h2 className="text-lg font-semibold">API connection</h2>
-          <p className="mt-3 text-sm text-slate-600">Authenticated URL requests use this base URL.</p>
+        <aside className="panel panel-body h-fit">
+          <h2 className="text-lg font-semibold text-ink">API connection</h2>
+          <p className="mt-3 text-sm leading-6 text-slate-600">Authenticated requests use this deployed backend.</p>
           <p className="mt-4 break-all rounded-md bg-slate-100 p-3 font-mono text-xs text-slate-700">
             {API_BASE_URL}
           </p>
