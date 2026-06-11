@@ -1,3 +1,7 @@
+import os
+
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -12,7 +16,7 @@ app = FastAPI(title="Shortlink API")
 
 allowed_origins = os.getenv(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5173,https://shortlink-api-4ubx.onrender.com"
+    "http://localhost:5173,https://shortlink-generator-app.onrender.com"
 ).split(",")
 
 app.add_middleware(
@@ -31,7 +35,6 @@ app.include_router(
 )
 
 @app.get("/")
-
 def root():
     return {"message": "Shortlink API Is Running"}
 
