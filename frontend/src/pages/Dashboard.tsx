@@ -341,7 +341,7 @@ export function Dashboard() {
   };
 
   return (
-    <section className="space-y-4">
+    <section className="-mt-3 space-y-4">
       <div className="page-header">
         <div>
           <p className="eyebrow">Dashboard</p>
@@ -479,7 +479,7 @@ export function Dashboard() {
                               )}
                             </div>
 
-                            <div className="mt-3 grid items-start gap-4 md:grid-cols-[minmax(210px,340px)_minmax(260px,420px)_minmax(180px,260px)] md:gap-7">
+                            <div className="mt-3 grid items-start gap-4 md:grid-cols-[minmax(200px,300px)_minmax(250px,360px)_minmax(170px,240px)] md:gap-5">
                               <div className="min-w-0">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                   Original URL
@@ -546,7 +546,10 @@ export function Dashboard() {
                                 </div>
                               </div>
 
-                              <div className="relative w-full md:pt-5" data-floating-control>
+                              <div className="relative w-full" data-floating-control>
+                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                  Expiration
+                                </p>
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -556,9 +559,9 @@ export function Dashboard() {
                                       expirationPickerCode === url.short_code ? null : url.short_code,
                                     );
                                   }}
-                                  className="flex w-full items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                                  className="mt-1 flex w-full items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                                 >
-                                  <span>{url.expires_at ? formatDateET(url.expires_at) : "Set expiration"}</span>
+                                  <span>{url.expires_at ? formatDateET(url.expires_at) : "Date"}</span>
                                   <svg className="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                                     <path
                                       d="m6 8 4 4 4-4"
@@ -638,30 +641,28 @@ export function Dashboard() {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => setDeleteCode(url.short_code)}
-                                className="block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-red-700 hover:bg-red-50"
+                                disabled={actionCode === url.short_code}
+                                onClick={() => {
+                                  if (deleteCode === url.short_code) {
+                                    void handleDelete(url.short_code);
+                                    return;
+                                  }
+
+                                  setDeleteCode(url.short_code);
+                                }}
+                                className={[
+                                  "block w-full rounded-md px-3 py-2 text-left text-sm font-semibold disabled:cursor-not-allowed",
+                                  deleteCode === url.short_code
+                                    ? "bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300"
+                                    : "text-red-700 hover:bg-red-50",
+                                ].join(" ")}
                               >
-                                Delete
+                                {actionCode === url.short_code
+                                  ? "Deleting..."
+                                  : deleteCode === url.short_code
+                                    ? "Confirm delete"
+                                    : "Delete"}
                               </button>
-                              {deleteCode === url.short_code && (
-                                <div className="mt-1 border-t border-slate-200 pt-2">
-                                  <button
-                                    type="button"
-                                    disabled={actionCode === url.short_code}
-                                    onClick={() => handleDelete(url.short_code)}
-                                    className="block w-full rounded-md bg-red-600 px-3 py-2 text-left text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
-                                  >
-                                    {actionCode === url.short_code ? "Deleting..." : "Confirm delete"}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setDeleteCode(null)}
-                                    className="mt-1 block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-600 hover:bg-slate-100"
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              )}
                             </div>
                           )}
                         </div>
