@@ -17,6 +17,7 @@ class URLResponse(BaseModel):
     short_url: str
     expires_at: datetime | None = None
     created_at: datetime
+    is_active: bool
 
 class UserCreate(BaseModel):
     email: EmailStr

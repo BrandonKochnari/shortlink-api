@@ -71,6 +71,7 @@ def create_short_url(db: Session, url_data: URLCreate, current_user: User, base_
         "short_url": f"{base_url}/{new_url.short_code}",
         "expires_at": new_url.expires_at,
         "created_at": new_url.created_at,
+        "is_active": new_url.is_active,
     }
 
 def get_urls_for_user(db: Session, user_id: int, base_url: str | None = None) -> list[dict]:
@@ -91,6 +92,7 @@ def get_urls_for_user(db: Session, user_id: int, base_url: str | None = None) ->
             "short_url": f"{base_url}/{url.short_code}",
             "expires_at": url.expires_at,
             "created_at": url.created_at,
+            "is_active": url.is_active,
         }
         for url in urls
     ]

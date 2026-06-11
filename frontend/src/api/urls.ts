@@ -7,6 +7,7 @@ export type ShortUrl = {
   short_url: string;
   expires_at: string | null;
   created_at: string;
+  is_active: boolean;
 };
 
 export type CreateUrlInput = {
@@ -24,6 +25,10 @@ export type UrlAnalytics = {
   is_active: boolean;
   expires_at: string | null;
   is_expired: boolean;
+};
+
+export type UpdateUrlInput = {
+  expires_at: string | null;
 };
 
 type ApiErrorBody = {
@@ -84,5 +89,49 @@ export function fetchUrlAnalytics(token: string, shortCode: string) {
   return request<UrlAnalytics>(
     `/api/v1/urls/${encodeURIComponent(shortCode)}/analytics`,
     token,
+  );
+}
+
+export function updateShortUrl(token: string, shortCode: string, input: UpdateUrlInput) {
+  return request<{ message: string; expires_at: string | null }>(
+    `/api/v1/urls/${encodeURIComponent(shortCode)}/expiration`,
+    token,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export function activateShortUrl(token: string, shortCode: string) {
+  return request<{ message: string; short_code: string }>(
+    `/api/v1/urls/${encodeURIComponent(shortCode)}/activate`,
+    token,
+    {
+      method: "PATCH",
+    },
+  );
+}
+
+export function deactivateShortUrl(token: string, shortCode: string) {
+  return request<{ message: string; short_code: string }>(
+    `/api/v1/urls/${encodeURIComponent(shortCode)}/deactivate`,
+    token,
+    {
+      method: "PATCH",
+    },
+  );
+}
+
+export function deleteShortUrl(token: string, shortCode: string) {
+  return request<{ message: string }>(
+    `/api/v1/urls/${encodeURIComponent(shortCode)}`,
+    token,
+    {
+      method: "DELETE",
+    },
   );
 }
