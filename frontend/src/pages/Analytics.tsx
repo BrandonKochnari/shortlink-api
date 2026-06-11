@@ -94,7 +94,7 @@ export function Analytics() {
     <section className="space-y-6">
       <div className="page-header">
         <div>
-          <p className="eyebrow text-coral">Analytics</p>
+          <p className="eyebrow">Analytics</p>
           <h1 className="page-title">Link performance</h1>
           <p className="page-copy">Review traffic and status details for this short URL.</p>
         </div>
