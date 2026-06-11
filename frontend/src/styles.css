@@ -68,6 +68,10 @@
     @apply btn bg-coral text-white hover:bg-red-600;
   }
 
+  .btn-analytics {
+    @apply btn border border-teal-200 bg-teal-50 text-teal-800 hover:border-teal-300 hover:bg-teal-100;
+  }
+
   .btn-secondary {
     @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-100;
   }

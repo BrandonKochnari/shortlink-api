@@ -455,7 +455,7 @@ export function Dashboard() {
                               Open
                             </a>
                             <Link
-                              className="btn-coral px-3"
+                              className="btn-analytics px-3"
                               to={`/analytics/${encodeURIComponent(url.short_code)}`}
                             >
                               Analytics
