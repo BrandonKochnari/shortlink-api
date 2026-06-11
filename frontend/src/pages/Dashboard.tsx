@@ -97,20 +97,27 @@ export function Dashboard() {
   const expiringCount = urls.filter((url) => url.expires_at).length;
   const latestCreated = sortedUrls[0]?.created_at ? formatDateET(sortedUrls[0].created_at) : "No links yet";
 
-  const loadUrls = useCallback(async (statusOverrides: Record<string, boolean> = {}) => {
+  const cancelEditing = useCallback(() => {
+    setEditingCode(null);
+    setEditExpiresAt("");
+    setDeleteCode(null);
+  }, []);
+
+  const loadUrls = useCallback(async () => {
     if (!token) {
       return;
     }
 
     setError(null);
     const items = await fetchMyUrls(token);
-    setUrls(
-      items.map((item) => ({
-        ...item,
-        is_active: statusOverrides[item.short_code] ?? item.is_active ?? true,
-      })),
-    );
+    setUrls(items);
   }, [token]);
+
+  const refreshUrlsAfterMutation = useCallback(async () => {
+    await loadUrls();
+    cancelEditing();
+    setLatestUrl(null);
+  }, [cancelEditing, loadUrls]);
 
   useEffect(() => {
     let isMounted = true;
@@ -151,7 +158,7 @@ export function Dashboard() {
         ...(expiresAt ? { expires_at: toApiDateTime(expiresAt) } : {}),
       });
 
-      setUrls((currentUrls) => [createdUrl, ...currentUrls]);
+      await refreshUrlsAfterMutation();
       setLatestUrl(createdUrl);
       setNotice("Short URL created successfully.");
       setOriginalUrl("");
@@ -185,12 +192,6 @@ export function Dashboard() {
     setCreateError(null);
   };
 
-  const cancelEditing = () => {
-    setEditingCode(null);
-    setEditExpiresAt("");
-    setDeleteCode(null);
-  };
-
   const handleUpdate = async (shortCode: string) => {
     if (!token) {
       return;
@@ -204,8 +205,7 @@ export function Dashboard() {
       await updateShortUrl(token, shortCode, {
         expires_at: editExpiresAt ? toApiDateTime(editExpiresAt) ?? null : null,
       });
-      await loadUrls();
-      cancelEditing();
+      await refreshUrlsAfterMutation();
       setNotice("URL expiration updated.");
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Unable to update URL.");
@@ -226,14 +226,13 @@ export function Dashboard() {
     try {
       if (url.is_active) {
         await deactivateShortUrl(token, url.short_code);
-        await loadUrls({ [url.short_code]: false });
+        await refreshUrlsAfterMutation();
         setNotice("URL deactivated.");
       } else {
         await activateShortUrl(token, url.short_code);
-        await loadUrls({ [url.short_code]: true });
+        await refreshUrlsAfterMutation();
         setNotice("URL activated.");
       }
-      cancelEditing();
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Unable to change URL status.");
     } finally {
@@ -252,9 +251,7 @@ export function Dashboard() {
 
     try {
       await deleteShortUrl(token, shortCode);
-      setUrls((currentUrls) => currentUrls.filter((url) => url.short_code !== shortCode));
-      setLatestUrl((currentLatest) => (currentLatest?.short_code === shortCode ? null : currentLatest));
-      cancelEditing();
+      await refreshUrlsAfterMutation();
       setNotice("URL deleted.");
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Unable to delete URL.");

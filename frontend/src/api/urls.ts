@@ -76,7 +76,9 @@ async function request<T>(path: string, token: string, init: RequestInit = {}) {
 }
 
 export function fetchMyUrls(token: string) {
-  return request<ShortUrl[]>("/api/v1/urls/my-urls", token);
+  return request<ShortUrl[]>("/api/v1/urls/my-urls", token, {
+    cache: "no-store",
+  });
 }
 
 export function createShortUrl(token: string, input: CreateUrlInput) {
