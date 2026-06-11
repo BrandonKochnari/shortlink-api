@@ -479,7 +479,7 @@ export function Dashboard() {
                               )}
                             </div>
 
-                            <div className="mt-3 grid items-start gap-4 md:grid-cols-[minmax(200px,300px)_minmax(250px,360px)_minmax(170px,240px)] md:gap-5">
+                            <div className="mt-3 grid items-start gap-4 md:grid-cols-[220px_380px_150px] md:gap-4">
                               <div className="min-w-0">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                   Original URL
@@ -546,7 +546,7 @@ export function Dashboard() {
                                 </div>
                               </div>
 
-                              <div className="relative w-full" data-floating-control>
+                              <div className="relative w-36" data-floating-control>
                                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                                   Expiration
                                 </p>
@@ -561,7 +561,7 @@ export function Dashboard() {
                                   }}
                                   className="mt-1 flex w-full items-center justify-between rounded-md border border-slate-300 bg-white px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                                 >
-                                  <span>{url.expires_at ? formatDateET(url.expires_at) : "Date"}</span>
+                                  <span className="truncate">{url.expires_at ? formatDateET(url.expires_at) : "Date"}</span>
                                   <svg className="h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                                     <path
                                       d="m6 8 4 4 4-4"
