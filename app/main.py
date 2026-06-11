@@ -5,8 +5,23 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.routers import urls, auth
 from app.services.url_service import get_url_by_short_code, is_url_expired, record_click
+import os
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Shortlink API")
+
+allowed_origins = os.getenv(
+    "CORS_ALLOWED_ORIGINS",
+    "http://localhost:5173,https://shortlink-api-4ubx.onrender.com"
+).split(",")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin.strip() for origin in allowed_origins],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(urls.router, prefix="/api/v1/urls", tags=["URLs"])
 app.include_router(
