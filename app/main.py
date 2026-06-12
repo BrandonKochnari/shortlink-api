@@ -9,7 +9,7 @@ from app.database import get_db
 from app.routers import auth, urls
 from app.services.url_service import get_url_by_short_code, is_url_expired, record_click
 
-app = FastAPI(title="Shortlink API")
+app = FastAPI(title="URL Shortlink")
 
 NO_STORE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -40,7 +40,7 @@ app.include_router(
 
 @app.get("/")
 def root():
-    return {"message": "Shortlink API Is Running"}
+    return {"message": "URL Shortlink Is Running"}
 
 
 @app.get("/{short_code}")

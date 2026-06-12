@@ -42,7 +42,7 @@ export function Login() {
   return (
     <section className="mx-auto grid max-w-5xl gap-8 py-6 lg:grid-cols-[1fr_420px] lg:items-center lg:py-12">
       <div>
-        <p className="eyebrow">Shortlink</p>
+        <p className="eyebrow">URL Shortlink</p>
         <h1 className="page-title">Sign in to manage your links</h1>
         <p className="page-copy">
           Create short URLs, copy them quickly, and review click analytics from one focused workspace.

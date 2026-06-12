@@ -17,7 +17,7 @@ export function AppLayout() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <NavLink to="/dashboard" className="flex items-center gap-2 text-xl font-semibold tracking-normal">
             <LogoMark />
-            <span>Shortlink</span>
+            <span>URL Shortlink</span>
           </NavLink>
           <nav className="flex flex-wrap items-center justify-end gap-2">
             {isAuthenticated && (

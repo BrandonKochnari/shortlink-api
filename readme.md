@@ -1,6 +1,6 @@
-# Shortlink
+# URL Shortlink
 
-Shortlink is a full-stack URL shortener project with a FastAPI backend, a React frontend, JWT authentication, click analytics, expiration controls, and Alembic migrations.
+URL Shortlink is a full-stack URL shortener project with a FastAPI backend, a React frontend, JWT authentication, click analytics, expiration controls, and Alembic migrations.
 
 ## Live Deployment
 
