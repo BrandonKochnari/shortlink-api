@@ -51,7 +51,7 @@ def root():
 
 
 @app.get("/{short_code}")
-@limiter.limit("100/minute")
+@limiter.limit("60/minute")
 def redirect_to_original_url(
     short_code: str,
     request: Request,

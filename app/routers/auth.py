@@ -29,7 +29,7 @@ router = APIRouter()
     "/register",
     response_model=UserResponse,
 )
-@limiter.limit("5/minute")
+@limiter.limit("3/minute")
 def register(request: Request, user_data: UserCreate, db: Session = Depends(get_db)):
     existing_user = (
         db.query(User)
@@ -56,7 +56,7 @@ def register(request: Request, user_data: UserCreate, db: Session = Depends(get_
     "/login",
     response_model=Token,
 )
-@limiter.limit("10/minute")
+@limiter.limit("5/minute")
 def login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),

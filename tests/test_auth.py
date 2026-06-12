@@ -128,8 +128,8 @@ def test_register_returns_429_after_rate_limit_exceeded(client: TestClient):
             "/api/v1/auth/register",
             json={"email": unique_email(), "password": "password123"},
         )
-        for _ in range(6)
+        for _ in range(4)
     ]
 
-    assert [response.status_code for response in responses[:5]] == [200] * 5
-    assert responses[5].status_code == 429
+    assert [response.status_code for response in responses[:3]] == [200] * 3
+    assert responses[3].status_code == 429

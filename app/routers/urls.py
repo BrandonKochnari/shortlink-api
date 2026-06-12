@@ -27,14 +27,14 @@ def prevent_cache(response: Response) -> None:
 
 
 @router.get("/my-urls", response_model=list[URLResponse])
-@limiter.limit("30/minute")
+@limiter.limit("20/minute")
 def get_my_urls(request: Request, response: Response, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     prevent_cache(response)
     return get_urls_for_user(db, current_user.id)
 
 
 @router.post("/", response_model=URLResponse)
-@limiter.limit("10/minute")
+@limiter.limit("5/minute")
 def create_url(url_data: URLCreate, request: Request, response: Response, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     prevent_cache(response)
     try:
@@ -43,7 +43,7 @@ def create_url(url_data: URLCreate, request: Request, response: Response, db: Se
         raise HTTPException(status_code=400, detail=str(error))
     
 @router.get("/{short_code}/analytics", response_model=URLAnalytics)
-@limiter.limit("30/minute")
+@limiter.limit("20/minute")
 def get_url_analytics(short_code: str, request: Request, response: Response, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     prevent_cache(response)
     url = get_url_by_short_code(db, short_code)
