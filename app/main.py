@@ -19,7 +19,7 @@ NO_STORE_HEADERS = {
 
 allowed_origins = os.getenv(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5173,https://shortlink-generator-app.onrender.com,https://shortlink-c8sm.onrender.com",
+    "http://localhost:5173,https://urlshortlink.xyz,https://www.urlshortlink.xyz,https://shortlink-generator-app.onrender.com,https://shortlink-c8sm.onrender.com",
 ).split(",")
 
 app.add_middleware(

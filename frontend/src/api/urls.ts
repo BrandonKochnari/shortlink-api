@@ -30,8 +30,12 @@ export type UpdateUrlInput = {
   expires_at: string | null;
 };
 
+function getPublicBaseUrl() {
+  return window.location.origin.replace(/\/$/, "");
+}
+
 export function buildShortUrl(shortCode: string) {
-  return `${API_BASE_URL}/${encodeURIComponent(shortCode)}`;
+  return `${getPublicBaseUrl()}/${encodeURIComponent(shortCode)}`;
 }
 
 export function buildOpenShortUrl(shortCode: string) {

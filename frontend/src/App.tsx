@@ -5,6 +5,7 @@ import { Analytics } from "./pages/Analytics";
 import { Dashboard } from "./pages/Dashboard";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
+import { ShortLinkRedirect } from "./pages/ShortLinkRedirect";
 
 export function App() {
   return (
@@ -18,6 +19,7 @@ export function App() {
           <Route path="/analytics" element={<Navigate to="/dashboard" replace />} />
           <Route path="/analytics/:shortCode" element={<Analytics />} />
         </Route>
+        <Route path="/:shortCode" element={<ShortLinkRedirect />} />
       </Route>
     </Routes>
   );
