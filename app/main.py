@@ -2,8 +2,7 @@ import os
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
-from slowapi import _rate_limit_exceeded_handler
+from fastapi.responses import JSONResponse, RedirectResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.orm import Session
@@ -15,7 +14,36 @@ from app.utils.rate_limit import limiter
 
 app = FastAPI(title="URL Shortlink")
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+LOGIN_LIMIT_MESSAGE = "Maximum login attempts reached. Please try again in a minute."
+REGISTER_LIMIT_MESSAGE = "Maximum registration attempts reached. Please try again in a minute."
+CREATE_URL_LIMIT_MESSAGE = "Maximum URL creation attempts reached. Please try again in a minute."
+REDIRECT_LIMIT_MESSAGE = "Too many redirect requests. Please try again in a minute."
+URL_DATA_LIMIT_MESSAGE = "Too many URL data requests. Please try again in a minute."
+DEFAULT_LIMIT_MESSAGE = "Too many requests. Please try again in a minute."
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    path = request.url.path
+
+    if "/auth/login" in path:
+        message = LOGIN_LIMIT_MESSAGE
+    elif "/auth/register" in path:
+        message = REGISTER_LIMIT_MESSAGE
+    elif request.method == "POST" and "/urls" in path:
+        message = CREATE_URL_LIMIT_MESSAGE
+    elif "analytics" in path or "my-urls" in path:
+        message = URL_DATA_LIMIT_MESSAGE
+    elif request.method == "GET":
+        message = REDIRECT_LIMIT_MESSAGE
+    else:
+        message = DEFAULT_LIMIT_MESSAGE
+
+    return JSONResponse(
+        status_code=429,
+        content={"detail": message},
+    )
 
 NO_STORE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",

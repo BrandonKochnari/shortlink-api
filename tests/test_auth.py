@@ -14,7 +14,7 @@ if "DATABASE_URL" not in os.environ:
     os.environ["DATABASE_URL"] = f"sqlite:///{Path(__file__).resolve().parent / 'test_shortlink.db'}"
 
 from app.database import Base, get_db  # noqa: E402
-from app.main import app  # noqa: E402
+from app.main import REGISTER_LIMIT_MESSAGE, app  # noqa: E402
 from app.utils.rate_limit import limiter  # noqa: E402
 
 
@@ -133,3 +133,4 @@ def test_register_returns_429_after_rate_limit_exceeded(client: TestClient):
 
     assert [response.status_code for response in responses[:3]] == [200] * 3
     assert responses[3].status_code == 429
+    assert responses[3].json() == {"detail": REGISTER_LIMIT_MESSAGE}
