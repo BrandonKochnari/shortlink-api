@@ -16,6 +16,7 @@ if "DATABASE_URL" not in os.environ:
 
 from app.database import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
+from app.utils.rate_limit import limiter  # noqa: E402
 
 
 TEST_DATABASE_URL = os.environ["DATABASE_URL"]
@@ -40,9 +41,11 @@ def override_get_db():
 
 @pytest.fixture(autouse=True)
 def reset_database():
+    limiter.limiter.storage.reset()
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     yield
+    limiter.limiter.storage.reset()
 
 
 @pytest.fixture

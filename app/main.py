@@ -3,13 +3,19 @@ import os
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.routers import auth, urls
 from app.services.url_service import get_url_by_short_code, is_url_expired, record_click
+from app.utils.rate_limit import limiter
 
 app = FastAPI(title="URL Shortlink")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 NO_STORE_HEADERS = {
     "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -29,6 +35,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SlowAPIMiddleware)
 
 app.include_router(urls.router, prefix="/api/v1/urls", tags=["URLs"])
 app.include_router(
@@ -44,6 +51,7 @@ def root():
 
 
 @app.get("/{short_code}")
+@limiter.limit("100/minute")
 def redirect_to_original_url(
     short_code: str,
     request: Request,

@@ -15,6 +15,7 @@ if "DATABASE_URL" not in os.environ:
 
 from app.database import Base, get_db  # noqa: E402
 from app.main import app  # noqa: E402
+from app.utils.rate_limit import limiter  # noqa: E402
 
 
 TEST_DATABASE_URL = os.environ["DATABASE_URL"]
@@ -39,9 +40,11 @@ def override_get_db():
 
 @pytest.fixture(autouse=True)
 def reset_database():
+    limiter.limiter.storage.reset()
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     yield
+    limiter.limiter.storage.reset()
 
 
 @pytest.fixture
@@ -117,3 +120,16 @@ def test_login_rejects_invalid_password(client: TestClient):
 
     assert login_response.status_code == 401
     assert login_response.json()["detail"] == "Invalid Email or Password"
+
+
+def test_register_returns_429_after_rate_limit_exceeded(client: TestClient):
+    responses = [
+        client.post(
+            "/api/v1/auth/register",
+            json={"email": unique_email(), "password": "password123"},
+        )
+        for _ in range(6)
+    ]
+
+    assert [response.status_code for response in responses[:5]] == [200] * 5
+    assert responses[5].status_code == 429

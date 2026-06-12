@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError
 from sqlalchemy.orm import Session
@@ -16,6 +16,7 @@ from app.schemas import (
     UserResponse,
     Token,
 )
+from app.utils.rate_limit import limiter
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/api/v1/auth/login"
@@ -28,7 +29,8 @@ router = APIRouter()
     "/register",
     response_model=UserResponse,
 )
-def register(user_data: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register(request: Request, user_data: UserCreate, db: Session = Depends(get_db)):
     existing_user = (
         db.query(User)
         .filter(User.email == user_data.email)
@@ -54,7 +56,9 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     "/login",
     response_model=Token,
 )
+@limiter.limit("10/minute")
 def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
