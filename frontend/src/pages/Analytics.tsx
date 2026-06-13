@@ -3,17 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { AnalyticsGraph } from "../components/AnalyticsGraph";
 import { AnalyticsRange, fetchUrlAnalytics, fetchUrlAnalyticsTimeseries, UrlAnalytics } from "../api/urls";
 import { useAuth } from "../auth/AuthContext";
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "None";
-  }
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
+import { formatDateET } from "../lib/formatDate";
 
 function Badge({ tone, children }: { tone: "neutral" | "success" | "danger"; children: string }) {
   const toneClass = {
@@ -169,15 +159,15 @@ export function Analytics() {
               </div>
               <div className="rounded-lg bg-slate-50 p-4">
                 <dt className="text-sm font-medium text-slate-500">Created at</dt>
-                <dd className="mt-1 text-sm text-slate-900">{formatDate(analytics.created_at)}</dd>
+                <dd className="mt-1 text-sm text-slate-900">{formatDateET(analytics.created_at)}</dd>
               </div>
               <div className="rounded-lg bg-slate-50 p-4">
                 <dt className="text-sm font-medium text-slate-500">Last clicked</dt>
-                <dd className="mt-1 text-sm text-slate-900">{formatDate(analytics.last_clicked)}</dd>
+                <dd className="mt-1 text-sm text-slate-900">{formatDateET(analytics.last_clicked)}</dd>
               </div>
               <div className="rounded-lg bg-slate-50 p-4">
                 <dt className="text-sm font-medium text-slate-500">Expires at</dt>
-                <dd className="mt-1 text-sm text-slate-900">{formatDate(analytics.expires_at)}</dd>
+                <dd className="mt-1 text-sm text-slate-900">{formatDateET(analytics.expires_at)}</dd>
               </div>
               <div className="rounded-lg bg-slate-50 p-4">
                 <dt className="text-sm font-medium text-slate-500">Flags</dt>

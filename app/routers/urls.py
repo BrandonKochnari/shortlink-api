@@ -13,6 +13,7 @@ from app.services.url_service import (
     get_url_by_short_code,
     get_urls_for_guest,
     get_urls_for_user,
+    normalize_datetime_eastern,
 )
 from app.routers.auth import get_current_user
 from app.models import User
@@ -252,5 +253,5 @@ def update_expiration(short_code: str, update_data: URLUpdate, response: Respons
     db.commit()
     db.refresh(url)
 
-    return {"message": "URL Expiry Updated", "expires_at": url.expires_at}
+    return {"message": "URL Expiry Updated", "expires_at": normalize_datetime_eastern(url.expires_at)}
     

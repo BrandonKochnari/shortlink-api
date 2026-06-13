@@ -274,6 +274,23 @@ def test_guest_analytics_timeseries_returns_click_history(client: TestClient, ra
     assert sum(point["clicks"] for point in data["points"]) == 1
 
 
+def test_guest_multiday_timeseries_ends_at_current_eastern_minute(client: TestClient):
+    create_response = create_guest_url(client, token="guest-eastern-timeseries")
+    assert create_response.status_code == 200
+    short_code = created_short_code(create_response)
+
+    before_request = datetime.now(timezone.utc)
+    timeseries_response = client.get(
+        f"/api/v1/urls/guest/{short_code}/analytics/timeseries?range=7d",
+        headers=guest_headers("guest-eastern-timeseries"),
+    )
+    after_request = datetime.now(timezone.utc)
+
+    assert timeseries_response.status_code == 200
+    last_point = parse_api_datetime(timeseries_response.json()["points"][-1]["period_start"])
+    assert before_request <= last_point <= after_request
+
+
 def test_guest_short_urls_do_not_appear_in_authenticated_my_urls(client: TestClient):
     create_guest_response = create_guest_url(client)
     assert create_guest_response.status_code == 200
@@ -601,7 +618,7 @@ def test_update_url_expiration(client: TestClient):
     assert update_response.status_code == 200
     data = update_response.json()
     assert data["message"] == "URL Expiry Updated"
-    assert data["expires_at"].startswith("2030-01-01T00:00:00")
+    assert parse_api_datetime(data["expires_at"]) == datetime(2030, 1, 1, tzinfo=timezone.utc)
 
 
 def test_updating_expiration_to_past_blocks_redirect(client: TestClient):

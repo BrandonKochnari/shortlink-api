@@ -97,12 +97,12 @@ export function AnalyticsGraph({ loadTimeseries }: AnalyticsGraphProps) {
         <div className="mt-6">
           <div className="flex h-56 items-end gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-4">
             {points.map((point) => {
-              const height = `${Math.max(8, (point.clicks / maxClicks) * 100)}%`;
+              const height = point.clicks === 0 ? "0%" : `${Math.max(8, (point.clicks / maxClicks) * 100)}%`;
 
               return (
-                <div key={point.period_start} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2">
+                <div key={point.period_start} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end">
                   <div
-                    className="w-full rounded-t bg-mint"
+                    className="w-full rounded-t bg-mint shadow-sm"
                     style={{ height }}
                     title={`${formatDateET(point.period_start)}: ${point.clicks} clicks`}
                   />

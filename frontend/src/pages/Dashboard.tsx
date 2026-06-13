@@ -361,16 +361,16 @@ export function Dashboard() {
   };
 
   return (
-    <section className="-mt-3 space-y-4">
-      <div className="page-header">
-        <div>
-          <p className="eyebrow">Dashboard</p>
-          <h1 className="page-title">Manage short links</h1>
-          <p className="page-copy">Create, update, copy, and inspect analytics for your shortened URLs.</p>
-        </div>
-      </div>
-
+    <section className="-mt-3">
       <div className="mx-auto w-full max-w-5xl space-y-5">
+        <div className="page-header">
+          <div>
+            <p className="eyebrow">Dashboard</p>
+            <h1 className="page-title">Manage short links</h1>
+            <p className="page-copy">Create, update, copy, and inspect analytics for your shortened URLs.</p>
+          </div>
+        </div>
+
         <div className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
           <form className="panel panel-body flex h-full flex-col" onSubmit={handleCreate}>
             <div>
