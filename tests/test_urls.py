@@ -304,7 +304,7 @@ def test_guest_short_urls_do_not_appear_in_authenticated_my_urls(client: TestCli
     assert guest_short_code not in short_codes
 
 
-def test_custom_alias_payload_is_ignored(client: TestClient):
+def test_logged_in_user_can_create_custom_short_code(client: TestClient):
     headers = auth_headers(client)
     requested_alias = "custom-choice"
 
@@ -318,9 +318,63 @@ def test_custom_alias_payload_is_ignored(client: TestClient):
     assert response.status_code == 200
 
     data = response.json()
-    assert_generated_short_code(data["short_code"])
-    assert data["short_code"] != requested_alias
+    assert data["short_code"] == requested_alias
     assert data["short_url"].endswith(data["short_code"])
+
+
+def test_duplicate_custom_short_code_returns_clear_error(client: TestClient):
+    headers = auth_headers(client)
+    requested_alias = "already-taken"
+
+    first_response = create_url(client, headers, custom_alias=requested_alias)
+    second_response = create_url(client, headers, custom_alias=requested_alias)
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 400
+    assert second_response.json()["detail"] == "Custom short code is already taken."
+
+
+def test_invalid_custom_short_code_returns_clear_error(client: TestClient):
+    headers = auth_headers(client)
+
+    response = create_url(client, headers, custom_alias="bad alias!")
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == (
+        "Custom short code must be 3-32 characters and use only letters, numbers, dashes, or underscores."
+    )
+
+
+def test_guest_users_cannot_create_more_than_ten_links(client: TestClient):
+    token = "limited-guest"
+
+    for index in range(10):
+        response = create_guest_url(
+            client,
+            token=token,
+            original_url=f"https://example.com/{index}",
+        )
+        assert response.status_code == 200
+        limiter.limiter.storage.reset()
+
+    response = create_guest_url(
+        client,
+        token=token,
+        original_url="https://example.com/overflow",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Guest accounts can create up to 10 links. Sign in for unlimited links."
+
+
+def test_guest_custom_alias_payload_is_ignored(client: TestClient):
+    response = create_guest_url(client, custom_alias="guest-custom")
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert_generated_short_code(data["short_code"])
+    assert data["short_code"] != "guest-custom"
 
 
 def test_redirect_short_url(client: TestClient):

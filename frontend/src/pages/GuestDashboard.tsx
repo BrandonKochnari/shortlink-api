@@ -14,6 +14,9 @@ import { formatDateET } from "../lib/formatDate";
 
 type UrlListTransform = (items: ShortUrl[]) => ShortUrl[];
 
+const GUEST_LINK_LIMIT = 10;
+const GUEST_LINK_LIMIT_MESSAGE = "Guest accounts can create up to 10 links. Sign in for unlimited links.";
+
 export function GuestDashboard() {
   const [guestToken] = useState(() => getGuestToken());
   const [urls, setUrls] = useState<ShortUrl[]>([]);
@@ -125,6 +128,12 @@ export function GuestDashboard() {
     event.preventDefault();
     setCreateError(null);
     setRowMessage(null);
+
+    if (urls.length >= GUEST_LINK_LIMIT) {
+      setCreateError(GUEST_LINK_LIMIT_MESSAGE);
+      return;
+    }
+
     setIsCreating(true);
 
     try {
@@ -192,7 +201,7 @@ export function GuestDashboard() {
             <p className="eyebrow">Guest dashboard</p>
             <h1 className="page-title">Manage guest links</h1>
             <p className="page-copy">
-              Guest links expire after 7 days. Sign in to create custom links, choose your own expiration, keep links forever, and activate or deactivate links later.
+              Guest links expire after 7 days and are limited to 10 links. Sign in for unlimited links, custom short codes, custom expiration, permanent links, and activate/deactivate controls.
             </p>
           </div>
           <Link className="btn-secondary self-start" to="/login">
@@ -205,7 +214,7 @@ export function GuestDashboard() {
             <div>
               <h2 className="text-lg font-semibold text-ink">Create a short URL</h2>
               <p className="mt-1 text-sm text-slate-500">
-                The backend sets each guest link to expire in 7 days.
+                The backend sets each guest link to expire in 7 days and keeps this browser to 10 links.
               </p>
             </div>
 

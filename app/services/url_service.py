@@ -1,15 +1,21 @@
 from datetime import datetime, timedelta, timezone
+import os
+import re
 
 from sqlalchemy.orm import Session
 
 from app.models import URL, User, Click
 from app.schemas import URLCreate
 from app.utils.short_code import generate_short_code
-import os
 
 
 EASTERN_STANDARD_OFFSET = timedelta(hours=-5)
 EASTERN_DAYLIGHT_OFFSET = timedelta(hours=-4)
+CUSTOM_ALIAS_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,32}$")
+CUSTOM_ALIAS_MESSAGE = "Custom short code must be 3-32 characters and use only letters, numbers, dashes, or underscores."
+DUPLICATE_ALIAS_MESSAGE = "Custom short code is already taken."
+GUEST_LINK_LIMIT = 10
+GUEST_LINK_LIMIT_MESSAGE = "Guest accounts can create up to 10 links. Sign in for unlimited links."
 
 
 def _nth_weekday_of_month(year: int, month: int, weekday: int, occurrence: int) -> datetime:
@@ -43,6 +49,21 @@ def _eastern_offset_for_utc(value: datetime) -> timedelta:
 
 def get_public_base_url() -> str:
     return os.getenv("PUBLIC_BASE_URL", "http://localhost:5173").rstrip("/")
+
+
+def normalize_custom_alias(custom_alias: str | None) -> str | None:
+    if custom_alias is None:
+        return None
+
+    normalized_alias = custom_alias.strip()
+
+    if not normalized_alias:
+        return None
+
+    if not CUSTOM_ALIAS_PATTERN.fullmatch(normalized_alias):
+        raise ValueError(CUSTOM_ALIAS_MESSAGE)
+
+    return normalized_alias
 
 
 def get_url_by_short_code(db: Session, short_code: str) -> URL | None:
@@ -104,14 +125,27 @@ def build_url_response(url: URL, base_url: str | None = None) -> dict:
     }
 
 
-def create_short_url(db: Session, url_data: URLCreate, current_user: User, base_url: str | None = None) -> dict:
-
-    base_url = (base_url or get_public_base_url()).rstrip("/")
-
+def generate_unique_short_code(db: Session) -> str:
     short_code = generate_short_code()
 
     while get_url_by_short_code(db, short_code):
         short_code = generate_short_code()
+
+    return short_code
+
+
+def create_short_url(db: Session, url_data: URLCreate, current_user: User, base_url: str | None = None) -> dict:
+
+    base_url = (base_url or get_public_base_url()).rstrip("/")
+
+    custom_alias = normalize_custom_alias(url_data.custom_alias)
+
+    if custom_alias:
+        if get_url_by_short_code(db, custom_alias):
+            raise ValueError(DUPLICATE_ALIAS_MESSAGE)
+        short_code = custom_alias
+    else:
+        short_code = generate_unique_short_code(db)
 
     new_url = URL(
         user_id = current_user.id,
@@ -130,10 +164,17 @@ def create_short_url(db: Session, url_data: URLCreate, current_user: User, base_
 def create_guest_short_url(db: Session, url_data: URLCreate, guest_token: str, base_url: str | None = None) -> dict:
     base_url = (base_url or get_public_base_url()).rstrip("/")
 
-    short_code = generate_short_code()
+    guest_link_count = (
+        db.query(URL)
+        .filter(URL.user_id.is_(None))
+        .filter(URL.guest_token == guest_token)
+        .count()
+    )
 
-    while get_url_by_short_code(db, short_code):
-        short_code = generate_short_code()
+    if guest_link_count >= GUEST_LINK_LIMIT:
+        raise ValueError(GUEST_LINK_LIMIT_MESSAGE)
+
+    short_code = generate_unique_short_code(db)
 
     new_url = URL(
         user_id=None,

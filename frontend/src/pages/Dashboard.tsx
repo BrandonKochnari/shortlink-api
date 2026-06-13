@@ -43,6 +43,13 @@ function toDateTimeLocalInput(value: string | null) {
   ].join("");
 }
 
+function generateClientShortCode(length = 5) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const values = new Uint32Array(length);
+  window.crypto.getRandomValues(values);
+  return Array.from(values, (value) => chars[value % chars.length]).join("");
+}
+
 function UrlSkeleton() {
   return (
     <div className="divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200">
@@ -73,6 +80,7 @@ export function Dashboard() {
   const { token } = useAuth();
   const [urls, setUrls] = useState<ShortUrl[]>([]);
   const [originalUrl, setOriginalUrl] = useState("");
+  const [customAlias, setCustomAlias] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -203,8 +211,10 @@ export function Dashboard() {
     setIsCreating(true);
 
     try {
+      const nextCustomAlias = customAlias.trim();
       const createdUrl = await createShortUrl(token, {
         original_url: originalUrl,
+        ...(nextCustomAlias ? { custom_alias: nextCustomAlias } : {}),
         ...(expiresAt ? { expires_at: toApiDateTime(expiresAt) } : {}),
       });
 
@@ -217,6 +227,7 @@ export function Dashboard() {
       });
       setRowMessage({ shortCode: createdUrl.short_code, message: "Created", tone: "success" });
       setOriginalUrl("");
+      setCustomAlias("");
       setExpiresAt("");
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : "Unable to create URL.");
@@ -240,6 +251,12 @@ export function Dashboard() {
         tone: "error",
       });
     }
+  };
+
+  const handleGenerateRandomAlias = () => {
+    setCustomAlias(generateClientShortCode());
+    setCreateError(null);
+    setRowMessage(null);
   };
 
   const handleUpdate = async (shortCode: string, nextValue?: string) => {
@@ -377,7 +394,7 @@ export function Dashboard() {
               <div>
                 <h2 className="text-lg font-semibold text-ink">Create a short URL</h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  The short code is generated automatically.
+                  Add a custom short code or leave it blank for a random one.
                 </p>
               </div>
             </div>
@@ -400,6 +417,22 @@ export function Dashboard() {
                 />
               </label>
 
+              <label className="field-label" htmlFor="custom-alias">
+                Custom short code
+                <input
+                  id="custom-alias"
+                  type="text"
+                  value={customAlias}
+                  onChange={(event) => setCustomAlias(event.target.value)}
+                  className="field-input"
+                  placeholder="summer-sale"
+                  minLength={3}
+                  maxLength={32}
+                  pattern="[A-Za-z0-9_-]{3,32}"
+                  title="Use 3-32 letters, numbers, dashes, or underscores."
+                />
+              </label>
+
               <label className="field-label" htmlFor="expires-at">
                 Expires at
                 <input
@@ -412,7 +445,10 @@ export function Dashboard() {
               </label>
             </div>
 
-            <div className="mt-auto flex justify-end pt-4">
+            <div className="mt-auto flex flex-col gap-3 pt-4 sm:flex-row sm:justify-end">
+              <button type="button" onClick={handleGenerateRandomAlias} className="btn-secondary">
+                Generate random
+              </button>
               <button type="submit" disabled={isCreating} className="btn-accent sm:min-w-28">
                 {isCreating ? "Creating..." : "Create"}
               </button>
