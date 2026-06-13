@@ -17,6 +17,29 @@
   * {
     box-sizing: border-box;
   }
+
+  @keyframes boot-progress {
+    0% {
+      transform: translateX(-110%);
+    }
+    50% {
+      transform: translateX(60%);
+    }
+    100% {
+      transform: translateX(220%);
+    }
+  }
+
+  @keyframes boot-dot {
+    0%, 80%, 100% {
+      opacity: 0.35;
+      transform: translateY(0);
+    }
+    40% {
+      opacity: 1;
+      transform: translateY(-4px);
+    }
+  }
 }
 
 @layer components {
