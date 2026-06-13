@@ -1,346 +1,348 @@
-# URL Shortlink
+# Shortlink
 
-URL Shortlink is a full-stack URL shortener project with a FastAPI backend, a React frontend, JWT authentication, click analytics, expiration controls, and Alembic migrations.
+Shortlink is a full-stack URL shortener with authenticated link management, click analytics, expiration controls, and production deployments for both the frontend and backend.
 
-## Live Deployment
+## Live Application
 
+- Frontend: [https://urlshortlink.xyz/dashboard](https://urlshortlink.xyz/dashboard)
 - Backend API: [https://shortlink-api-1.onrender.com](https://shortlink-api-1.onrender.com)
-- Swagger docs: [https://shortlink-api-1.onrender.com/docs](https://shortlink-api-1.onrender.com/docs)
+- API docs: [https://shortlink-api-1.onrender.com/docs](https://shortlink-api-1.onrender.com/docs)
 
-## What The Project Does
+## Overview
 
-Users can register, log in, create short links, choose custom aliases, set expiration dates, view their own URLs, activate or deactivate links, delete links, and inspect click analytics.
+Authenticated users can:
 
-The backend records clicks on real redirect requests and avoids counting speculative browser prefetch requests as analytics clicks.
+- register and log in
+- create shortened URLs with auto-generated short codes
+- set optional expiration dates
+- view all links they own
+- activate or deactivate links
+- delete links
+- inspect per-link analytics, including total clicks and last click time
 
-## Current Features
+Shortlink uses a React frontend for the product UI and a FastAPI backend for authentication, URL management, redirect handling, analytics, and persistence.
 
-- User registration
-- User login with JWT bearer tokens
-- Swagger-compatible OAuth2 password flow for `/docs`
-- Protected user session endpoint
-- Create short URLs with generated codes
-- Create short URLs with custom aliases
-- Redirect short URLs to original destinations
-- Optional expiration dates
-- Activate and deactivate URLs
-- Delete URLs
-- Update expiration dates
-- User ownership checks on protected routes
-- Click tracking
-- Per-link analytics
-- Alembic migrations
-- Docker and Docker Compose setup
-- Automated URL tests
-
-## Tech Stack
-
-### Backend
-
-- Python 3.13
-- FastAPI
-- SQLAlchemy
-- PostgreSQL
-- Alembic
-- Pydantic
-- `python-jose`
-- `passlib`
+## Stack
 
 ### Frontend
 
 - React 18
 - TypeScript
 - Vite
-- Tailwind CSS
 - React Router
+- Tailwind CSS
+- PostCSS
+- Fetch API
+- Nginx for the containerized frontend
+- Vercel-style rewrite configuration plus a custom domain
+
+### Backend
+
+- Python 3
+- FastAPI
+- SQLAlchemy
+- PostgreSQL
+- Alembic
+- Pydantic
+- `python-jose` for JWT auth
+- `passlib` for password hashing
+- `python-multipart` for OAuth2 form parsing
+- `slowapi` for rate limiting
+- Uvicorn
+
+### Infrastructure
+
+- Render for the deployed backend
+- Docker
+- Docker Compose
 
 ### Testing
 
 - pytest
-- FastAPI TestClient
+- FastAPI `TestClient`
 - httpx
 
-## Repository Structure
+## Product Behavior
+
+- Short codes are generated automatically.
+- Custom aliases are not part of the current product.
+- Redirects respect both activation status and expiration.
+- Expired links return `410 Gone`.
+- Missing links return `404 Not Found`.
+- Invalid bearer tokens return `401`.
+- Delete operations cascade to related click records.
+- Redirect analytics skip speculative browser requests to reduce double counting.
+
+## Repository Layout
 
 ```text
 shortlink-api/
-├── app/
-│   ├── main.py
-│   ├── database.py
-│   ├── models.py
-│   ├── schemas.py
-│   ├── routers/
-│   │   ├── auth.py
-│   │   └── urls.py
-│   ├── services/
-│   │   ├── security.py
-│   │   └── url_service.py
-│   └── utils/
-│       └── short_code.py
 ├── alembic/
 │   └── versions/
+├── app/
+│   ├── routers/
+│   ├── services/
+│   ├── utils/
+│   ├── database.py
+│   ├── main.py
+│   ├── models.py
+│   └── schemas.py
 ├── frontend/
+│   ├── public/
 │   ├── src/
 │   │   ├── api/
 │   │   ├── auth/
 │   │   ├── components/
 │   │   ├── lib/
 │   │   └── pages/
-│   └── package.json
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   └── vercel.json
+├── scripts/
 ├── tests/
-├── Dockerfile
-├── docker-compose.yml
 ├── alembic.ini
+├── docker-compose.yml
+├── Dockerfile
+├── Dockerfile.backend
 ├── requirements.txt
 └── readme.md
 ```
 
-## API Overview
+## API Surface
 
-### Auth Routes
+### Auth
 
 - `POST /api/v1/auth/register`
 - `POST /api/v1/auth/login`
 - `GET /api/v1/auth/me`
 
-### URL Routes
+### URLs
 
 - `POST /api/v1/urls/`
 - `GET /api/v1/urls/my-urls`
 - `GET /api/v1/urls/{short_code}/analytics`
-- `PATCH /api/v1/urls/{short_code}/deactivate`
 - `PATCH /api/v1/urls/{short_code}/activate`
+- `PATCH /api/v1/urls/{short_code}/deactivate`
 - `PATCH /api/v1/urls/{short_code}/expiration`
 - `DELETE /api/v1/urls/{short_code}`
 
-### Redirect Route
+### Redirect
 
 - `GET /{short_code}`
 
 ## Authentication Notes
 
-The backend uses bearer tokens.
+The backend uses JWT bearer tokens.
 
-For Swagger:
+Swagger is configured with OAuth2 password flow. In `/docs`:
 
-1. Open `/docs`
-2. Register a user with `POST /api/v1/auth/register`
-3. Click `Authorize`
-4. Put your email in the `username` field
-5. Put your password in the `password` field
-6. Leave `client_id` and `client_secret` blank
-
-Swagger uses OAuth2 password flow, so `/api/v1/auth/login` expects form data in the docs flow, not JSON.
+1. Register a user.
+2. Click `Authorize`.
+3. Enter the account email in the `username` field.
+4. Enter the password in the `password` field.
+5. Leave `client_id` and `client_secret` blank.
 
 ## Environment Variables
 
-Use [.env.example](/Users/muhammad/Random_Projects/shortlink-api/.env.example) as the template.
-
-Current expected variables:
+Use [.env.example](/Users/muhammad/Random_Projects/shortlink-api/.env.example) as the starting point.
 
 ```env
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/shortlink_db
 SECRET_KEY=change-this-in-production
-BASE_URL=http://localhost:8000
-CORS_ALLOWED_ORIGINS=http://localhost:5173,https://shortlink-api-1.onrender.com
+PUBLIC_BASE_URL=http://localhost:5173
+CORS_ALLOWED_ORIGINS=http://localhost:5173,https://urlshortlink.xyz,https://www.urlshortlink.xyz
 ```
 
-### Variable Meanings
+### Backend variables
 
-- `DATABASE_URL`: SQLAlchemy database connection string
-- `SECRET_KEY`: JWT signing secret
-- `BASE_URL`: base URL used when building returned `short_url` values
-- `CORS_ALLOWED_ORIGINS`: comma-separated list of allowed frontend origins
+- `DATABASE_URL`: database connection string used by SQLAlchemy and Alembic
+- `SECRET_KEY`: signing key for JWT creation and validation
+- `PUBLIC_BASE_URL`: base URL used when the API returns `short_url`
+- `CORS_ALLOWED_ORIGINS`: comma-separated frontend origins allowed to call the API
 
-## Backend Local Setup
+### Frontend variables
 
-### 1. Create and activate a virtual environment
+- `VITE_API_BASE_URL`: API base URL used by the frontend build
+
+The frontend also supports runtime injection through `frontend/public/runtime-config.js`, which is populated by `frontend/docker-entrypoint.sh` in container deployments.
+
+## Local Development
+
+### Backend setup
+
+1. Create and activate a virtual environment:
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-### 2. Install dependencies
+2. Install backend dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configure environment variables
-
-Create a `.env` file:
+3. Create a local environment file:
 
 ```bash
-cp .env.example .env
+cp -n .env.example .env
 ```
 
-Then adjust the values for your machine and database.
+If `.env` already exists, do not overwrite it unless you intentionally want to replace your working local settings.
 
-### 4. Run migrations
+4. Run database migrations:
 
 ```bash
 alembic upgrade head
 ```
 
-### 5. Start the API
+5. Start the backend:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Local backend endpoints:
+Local backend URLs:
 
-- API root: [http://127.0.0.1:8000](http://127.0.0.1:8000)
-- Swagger docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- API: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+- Docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-## Frontend Local Setup
+### Frontend setup
 
-The frontend lives in [frontend/](/Users/muhammad/Random_Projects/shortlink-api/frontend).
-
-### 1. Install frontend dependencies
+1. Install frontend dependencies:
 
 ```bash
 cd frontend
-npm install
+npm ci
 ```
 
-### 2. Configure the API base URL if needed
-
-The frontend defaults to the deployed backend:
-
-```ts
-https://shortlink-api-1.onrender.com
-```
-
-For local backend development, set:
+2. Point the frontend at the local API:
 
 ```bash
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-You can do that in a frontend `.env` file or in your shell before starting Vite.
+Use `127.0.0.1:8000` for local development. The repo also contains production runtime config for deployed environments, so setting `VITE_API_BASE_URL` explicitly keeps the local frontend pointed at your local backend.
 
-### 3. Start the frontend
+3. Start the frontend:
 
 ```bash
-npm run dev
+VITE_API_BASE_URL=http://127.0.0.1:8000 npm run dev
 ```
 
 Typical local frontend URL:
 
 - [http://localhost:5173](http://localhost:5173)
 
-## Running Tests
+### Recommended local startup flow
 
-Run the full test suite from the project root:
-
-```bash
-./venv/bin/python -m pytest -q
-```
-
-Run the URL-focused suite only:
+Terminal 1, backend:
 
 ```bash
-./venv/bin/python -m pytest -v tests/test_urls.py
+cd /Users/muhammad/Random_Projects/shortlink-api
+source venv/bin/activate
+./venv/bin/alembic upgrade head
+./venv/bin/uvicorn app.main:app --reload
 ```
 
-At the time of this update, the current URL suite passes locally.
-
-## Migrations
-
-Alembic is part of the repository and should be committed along with schema changes.
-
-### Create a new migration
+Terminal 2, frontend:
 
 ```bash
-alembic revision --autogenerate -m "describe change"
+cd /Users/muhammad/Random_Projects/shortlink-api/frontend
+npm ci
+VITE_API_BASE_URL=http://127.0.0.1:8000 npm run dev
 ```
 
-### Apply migrations
+Then open:
 
-```bash
-alembic upgrade head
-```
-
-### Roll back one revision
-
-```bash
-alembic downgrade -1
-```
-
-### Important note for older local databases
-
-If your database tables were created before Alembic was introduced, `alembic upgrade head` may fail because the tables already exist.
-
-In that case, if the schema already matches the initial migration, you can mark it as migrated with:
-
-```bash
-alembic stamp head
-```
-
-Only do that if you are sure the existing schema matches the migration history you want Alembic to track.
+- frontend: [http://localhost:5173](http://localhost:5173)
+- backend docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
 ## Docker
 
-The monorepo has separate Docker builds for each app:
-
-- Backend API: [Dockerfile.backend](/Users/muhammad/Random_Projects/shortlink-api/Dockerfile.backend)
-- Frontend app: [frontend/Dockerfile](/Users/muhammad/Random_Projects/shortlink-api/frontend/Dockerfile)
-
-### Start frontend, backend, and Postgres
+Run the full local stack with:
 
 ```bash
 docker compose up --build
 ```
 
-The API container runs migrations before starting Uvicorn. The frontend container builds the Vite app and serves it with Nginx.
+This starts:
 
-Default ports:
+- PostgreSQL
+- the FastAPI backend
+- the frontend served through Nginx
 
-- API: `8000`
-- Frontend: `5173`
-- Postgres host port: `5433`
+Default local ports:
 
-### Start only one app
+- frontend: `5173`
+- backend: `8000`
+- PostgreSQL: `5433`
+
+The backend containers run `alembic upgrade head` before starting Uvicorn.
+
+## Migrations
+
+Create a migration:
 
 ```bash
-docker compose up --build api
-docker compose up --build frontend
+alembic revision --autogenerate -m "describe change"
 ```
 
-## Current Behavior Notes
+Apply migrations:
 
-- Delete is a hard delete, not a soft delete
-- Deleting a URL also removes its associated click records through cascade behavior
-- Expired URLs return `410`
-- Inactive URLs return `410`
-- Missing URLs return `404`
-- Invalid tokens return `401`
-- Analytics are ownership-protected
-- Speculative prefetch-style requests are not counted as user clicks
+```bash
+alembic upgrade head
+```
+
+Roll back one revision:
+
+```bash
+alembic downgrade -1
+```
+
+If an older local database already has tables but no Alembic history, mark it as current only if the schema already matches:
+
+```bash
+alembic stamp head
+```
+
+## Testing
+
+Run all backend tests:
+
+```bash
+./venv/bin/python -m pytest -q
+```
+
+Run the URL-focused suite:
+
+```bash
+./venv/bin/python -m pytest -v tests/test_urls.py
+```
+
+Run the frontend production build check:
+
+```bash
+cd frontend
+npm run build
+```
+
+## Helper Scripts
+
+The `scripts/` folder includes local convenience scripts such as:
+
+- `scripts/start_dev.sh`
+- `scripts/reset_docker.sh`
+- `scripts/run_tests.sh`
+
+`scripts/run_tests.sh` supports both Unix-style and Windows-style virtual environment layouts.
 
 ## Deployment Notes
 
-The backend is currently deployed on Render at:
-
-- [https://shortlink-api-1.onrender.com](https://shortlink-api-1.onrender.com)
-
-If you deploy a new backend URL later, update:
-
-- this README
-- `frontend/src/api/config.ts`
-- `CORS_ALLOWED_ORIGINS`
-- `BASE_URL` where applicable
-
-## Known Follow-Up Areas
-
-These are reasonable future improvements, but they are not required for the current app to run:
-
-- broader backend test coverage beyond URL-focused tests
-- frontend deployment documentation
-- CI checks for migrations plus frontend build
-- more detailed analytics dimensions beyond total clicks and last clicked time
+- The production frontend runs on [https://urlshortlink.xyz](https://urlshortlink.xyz).
+- The production backend runs on [https://shortlink-api-1.onrender.com](https://shortlink-api-1.onrender.com).
+- The frontend defaults, runtime config, Docker config, and backend CORS settings are aligned to the current production URLs.
 
 ## Authors
 

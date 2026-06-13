@@ -306,20 +306,16 @@ def test_guest_short_urls_do_not_appear_in_authenticated_my_urls(client: TestCli
 
 def test_logged_in_user_can_create_custom_short_code(client: TestClient):
     headers = auth_headers(client)
-    requested_alias = "custom-choice"
 
     response = create_url(
         client,
         headers,
         original_url="https://fastapi.tiangolo.com/",
-        custom_alias=requested_alias,
+        custom_alias="custom-choice",
     )
 
-    assert response.status_code == 200
-
-    data = response.json()
-    assert data["short_code"] == requested_alias
-    assert data["short_url"].endswith(data["short_code"])
+    assert response.status_code == 422
+    assert "custom_alias" in str(response.json()["detail"])
 
 
 def test_duplicate_custom_short_code_returns_clear_error(client: TestClient):
