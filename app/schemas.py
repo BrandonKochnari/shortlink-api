@@ -3,7 +3,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, HttpUrl
 
 
 class URLCreate(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
 
     original_url: HttpUrl
     custom_alias: str | None = None

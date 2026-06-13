@@ -53,7 +53,7 @@ NO_STORE_HEADERS = {
 
 allowed_origins = os.getenv(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5173,http://localhost:5174,https://urlshortlink.xyz,https://www.urlshortlink.xyz,https://shortlink-generator-app.onrender.com,https://shortlink-c8sm.onrender.com,https://shortlink-api-1.onrender.com",
+    "http://localhost:5173,https://urlshortlink.xyz,https://www.urlshortlink.xyz",
 ).split(",")
 allowed_origin_regex = os.getenv("CORS_ALLOWED_ORIGIN_REGEX", r"https://.*\.vercel\.app")
 
