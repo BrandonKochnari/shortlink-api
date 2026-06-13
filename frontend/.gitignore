@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+.env.local
+.env.*.local
+vite-local.log
+vite-local.err.log
