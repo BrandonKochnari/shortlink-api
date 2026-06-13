@@ -85,6 +85,24 @@ async function request<T>(path: string, token: string, init: RequestInit = {}) {
   return (await response.json()) as T;
 }
 
+async function publicRequest<T>(path: string, init: RequestInit = {}) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    cache: "no-store",
+    ...init,
+    headers: {
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+      ...init.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw await parseError(response);
+  }
+
+  return (await response.json()) as T;
+}
+
 export function fetchMyUrls(token: string) {
   return request<ShortUrl[]>(`/api/v1/urls/my-urls?_=${Date.now()}`, token, {
     cache: "no-store",
@@ -93,6 +111,16 @@ export function fetchMyUrls(token: string) {
 
 export function createShortUrl(token: string, input: CreateUrlInput) {
   return request<ShortUrl>("/api/v1/urls/", token, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+  });
+}
+
+export function createGuestShortUrl(input: Pick<CreateUrlInput, "original_url">) {
+  return publicRequest<ShortUrl>("/api/v1/urls/guest", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

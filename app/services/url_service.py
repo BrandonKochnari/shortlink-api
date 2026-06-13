@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
@@ -36,6 +36,20 @@ def is_url_expired(url: URL, now: datetime | None = None) -> bool:
     return current_time > expires_at
 
 
+def build_url_response(url: URL, base_url: str | None = None) -> dict:
+    base_url = (base_url or get_public_base_url()).rstrip("/")
+
+    return {
+        "id": url.id,
+        "original_url": url.original_url,
+        "short_code": url.short_code,
+        "short_url": f"{base_url}/{url.short_code}",
+        "expires_at": url.expires_at,
+        "created_at": url.created_at,
+        "is_active": url.is_active,
+    }
+
+
 def create_short_url(db: Session, url_data: URLCreate, current_user: User, base_url: str | None = None) -> dict:
 
     base_url = (base_url or get_public_base_url()).rstrip("/")
@@ -56,15 +70,30 @@ def create_short_url(db: Session, url_data: URLCreate, current_user: User, base_
     db.commit()
     db.refresh(new_url)
 
-    return {
-        "id": new_url.id,
-        "original_url": new_url.original_url,
-        "short_code": new_url.short_code,
-        "short_url": f"{base_url}/{new_url.short_code}",
-        "expires_at": new_url.expires_at,
-        "created_at": new_url.created_at,
-        "is_active": new_url.is_active,
-    }
+    return build_url_response(new_url, base_url)
+
+
+def create_guest_short_url(db: Session, url_data: URLCreate, base_url: str | None = None) -> dict:
+    base_url = (base_url or get_public_base_url()).rstrip("/")
+
+    short_code = generate_short_code()
+
+    while get_url_by_short_code(db, short_code):
+        short_code = generate_short_code()
+
+    new_url = URL(
+        user_id=None,
+        original_url=str(url_data.original_url),
+        short_code=short_code,
+        expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+        is_active=True,
+    )
+
+    db.add(new_url)
+    db.commit()
+    db.refresh(new_url)
+
+    return build_url_response(new_url, base_url)
 
 def get_urls_for_user(db: Session, user_id: int, base_url: str | None = None) -> list[dict]:
     
@@ -78,13 +107,7 @@ def get_urls_for_user(db: Session, user_id: int, base_url: str | None = None) ->
 
     return [
         {
-            "id": url.id,
-            "original_url": url.original_url,
-            "short_code": url.short_code, 
-            "short_url": f"{base_url}/{url.short_code}",
-            "expires_at": url.expires_at,
-            "created_at": url.created_at,
-            "is_active": url.is_active,
+            **build_url_response(url, base_url),
         }
         for url in urls
     ]

@@ -89,6 +89,14 @@ export function Login() {
           {isSubmitting ? "Logging in..." : "Log in"}
         </button>
 
+        <button
+          type="button"
+          onClick={() => navigate("/guest")}
+          className="btn-secondary mt-3 w-full"
+        >
+          Continue as Guest
+        </button>
+
         <p className="mt-5 text-center text-sm text-slate-600">
           Need an account?{" "}
           <Link className="font-semibold text-mint hover:text-blue-700" to="/register">

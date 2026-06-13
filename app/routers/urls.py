@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas import URLCreate, URLResponse, URLAnalytics, URLUpdate
 from app.services.url_service import (
+    create_guest_short_url,
     create_short_url,
     get_url_by_short_code,
     get_urls_for_user,
@@ -39,6 +40,16 @@ def create_url(url_data: URLCreate, request: Request, response: Response, db: Se
     prevent_cache(response)
     try:
         return create_short_url(db, url_data, current_user)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+
+@router.post("/guest", response_model=URLResponse)
+@limiter.limit("5/minute")
+def create_guest_url(url_data: URLCreate, request: Request, response: Response, db: Session = Depends(get_db)):
+    prevent_cache(response)
+    try:
+        return create_guest_short_url(db, url_data)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
     
