@@ -52,6 +52,9 @@ app.include_router(
 def root():
     return {"message": "URL Shortlink Is Running"}
 
+@app.get("/debug/cors")
+def debug_cors():
+    return {"allowed_origins": allowed_origins}
 
 @app.get("/{short_code}")
 def redirect_to_original_url(
@@ -100,7 +103,3 @@ def redirect_to_original_url(
         record_click(db, url)
 
     return RedirectResponse(url.original_url, headers=NO_STORE_HEADERS)
-
-@app.get("/debug/cors")
-def debug_cors():
-    return {"allowed_origins": allowed_origins}
