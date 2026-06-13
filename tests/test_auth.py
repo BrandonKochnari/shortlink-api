@@ -71,6 +71,13 @@ def test_register_creates_user(client: TestClient):
     assert "email_verified" not in data
 
 
+def test_health_endpoint_returns_ok(client: TestClient):
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
 def test_duplicate_register_rejected(client: TestClient):
     email = unique_email()
     payload = {"email": email, "password": "password123"}

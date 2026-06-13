@@ -35,3 +35,21 @@ def test_guest_dashboard_displays_link_limit_message():
         "permanent links, and activate/deactivate controls."
     ) in guest_dashboard_source
     assert "Guest accounts can create up to 10 links. Sign in for unlimited links." in guest_dashboard_source
+
+
+def test_boot_check_uses_health_endpoint_without_blocking_routes():
+    app_path = Path(__file__).resolve().parent.parent / "frontend" / "src" / "App.tsx"
+    health_path = Path(__file__).resolve().parent.parent / "frontend" / "src" / "api" / "health.ts"
+    boot_path = Path(__file__).resolve().parent.parent / "frontend" / "src" / "components" / "BootLoadingScreen.tsx"
+
+    app_source = app_path.read_text()
+    health_source = health_path.read_text()
+    boot_source = boot_path.read_text()
+
+    assert "`${API_BASE_URL}/health`" in health_source
+    assert "HEALTH_CHECK_TIMEOUT_MS = 5000" in health_source
+    assert "MAX_BOOT_WAIT_MS = 15000" in app_source
+    assert "return <BootLoadingScreen />;" not in app_source
+    assert "<Routes>" in app_source
+    assert "{!isApiReady && showWarmupNotice && <BootLoadingScreen />}" in app_source
+    assert "Checking {API_BASE_URL}/health" in boot_source
