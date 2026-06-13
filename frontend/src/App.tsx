@@ -13,10 +13,12 @@ import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { ShortLinkRedirect } from "./pages/ShortLinkRedirect";
 
+const MAX_BOOT_WAIT_MS = 15000;
 const BOOT_RETRY_DELAY_MS = 3000;
 
 export function App() {
   const [isApiReady, setIsApiReady] = useState(false);
+  const [showWarmupNotice, setShowWarmupNotice] = useState(true);
 
   useEffect(() => {
     if (isApiReady) {
@@ -26,15 +28,22 @@ export function App() {
     const controller = new AbortController();
     let timeoutId: number | undefined;
     let isCancelled = false;
+    const startedAt = Date.now();
 
     const checkBackend = async () => {
       try {
         await checkApiHealth(controller.signal);
         if (!isCancelled) {
           setIsApiReady(true);
+          setShowWarmupNotice(false);
         }
       } catch {
         if (isCancelled) {
+          return;
+        }
+
+        if (Date.now() - startedAt >= MAX_BOOT_WAIT_MS) {
+          setShowWarmupNotice(false);
           return;
         }
 
@@ -55,10 +64,6 @@ export function App() {
     };
   }, [isApiReady]);
 
-  if (!isApiReady) {
-    return <BootLoadingScreen />;
-  }
-
   return (
     <AuthProvider>
       <Routes>
@@ -76,6 +81,7 @@ export function App() {
           <Route path="/:shortCode" element={<ShortLinkRedirect />} />
         </Route>
       </Routes>
+      {!isApiReady && showWarmupNotice && <BootLoadingScreen />}
     </AuthProvider>
   );
 }

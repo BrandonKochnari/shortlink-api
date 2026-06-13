@@ -78,6 +78,11 @@ def root():
     return {"message": "URL Shortlink Is Running"}
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.get("/{short_code}")
 @limiter.limit("60/minute")
 def redirect_to_original_url(
