@@ -37,16 +37,13 @@ def test_guest_dashboard_displays_link_limit_message():
     assert "Guest accounts can create up to 10 links. Sign in for unlimited links." in guest_dashboard_source
 
 
-def test_boot_check_uses_health_endpoint_without_blocking_routes():
+def test_frontend_routes_render_without_global_boot_gate():
     app_path = Path(__file__).resolve().parent.parent / "frontend" / "src" / "App.tsx"
-    health_path = Path(__file__).resolve().parent.parent / "frontend" / "src" / "api" / "health.ts"
 
     app_source = app_path.read_text()
-    health_source = health_path.read_text()
 
-    assert "`${API_BASE_URL}/health`" in health_source
-    assert "HEALTH_CHECK_TIMEOUT_MS = 5000" in health_source
     assert "BootLoadingScreen" not in app_source
+    assert "checkApiHealth" not in app_source
     assert "<Routes>" in app_source
 
 

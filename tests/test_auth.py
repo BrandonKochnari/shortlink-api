@@ -14,7 +14,7 @@ if "DATABASE_URL" not in os.environ:
     os.environ["DATABASE_URL"] = f"sqlite:///{Path(__file__).resolve().parent / 'test_shortlink.db'}"
 
 from app.database import Base, get_db  # noqa: E402
-from app.main import REGISTER_LIMIT_MESSAGE, app  # noqa: E402
+from app.main import REGISTER_LIMIT_MESSAGE, allowed_origins, app  # noqa: E402
 from app.utils.rate_limit import limiter  # noqa: E402
 
 
@@ -90,6 +90,10 @@ def test_cors_allows_production_frontend_origin(client: TestClient):
 
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "https://urlshortlink.xyz"
+
+
+def test_cors_origins_do_not_include_blank_values():
+    assert "" not in allowed_origins
 
 
 def test_duplicate_register_rejected(client: TestClient):

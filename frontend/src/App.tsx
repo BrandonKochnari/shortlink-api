@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { checkApiHealth } from "./api/health";
 import { AppLayout } from "./components/AppLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./auth/AuthContext";
@@ -13,35 +11,6 @@ import { Register } from "./pages/Register";
 import { ShortLinkRedirect } from "./pages/ShortLinkRedirect";
 
 export function App() {
-  const [isApiReady, setIsApiReady] = useState(false);
-
-  useEffect(() => {
-    if (isApiReady) {
-      return;
-    }
-
-    const controller = new AbortController();
-    let isCancelled = false;
-
-    const checkBackend = async () => {
-      try {
-        await checkApiHealth(controller.signal);
-        if (!isCancelled) {
-          setIsApiReady(true);
-        }
-      } catch {
-        // Route-level API calls handle their own loading and error states.
-      }
-    };
-
-    void checkBackend();
-
-    return () => {
-      isCancelled = true;
-      controller.abort();
-    };
-  }, [isApiReady]);
-
   return (
     <AuthProvider>
       <Routes>

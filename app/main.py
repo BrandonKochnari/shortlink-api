@@ -28,7 +28,7 @@ DEFAULT_LIMIT_MESSAGE = "Too many requests. Please try again in a minute."
 
 
 @app.exception_handler(RateLimitExceeded)
-async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+async def rate_limit_handler(request: Request, _exc: RateLimitExceeded):
     path = request.url.path
 
     if "/auth/login" in path:
@@ -52,14 +52,18 @@ NO_STORE_HEADERS = {
     "Expires": "0",
 }
 
-allowed_origins = os.getenv(
-    "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5173,https://urlshortlink.xyz,https://www.urlshortlink.xyz",
-).split(",")
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:5173,https://urlshortlink.xyz,https://www.urlshortlink.xyz",
+    ).split(",")
+    if origin.strip()
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin.strip() for origin in allowed_origins],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
