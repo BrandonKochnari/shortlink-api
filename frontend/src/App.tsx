@@ -3,6 +3,7 @@ import { AppLayout } from "./components/AppLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Analytics } from "./pages/Analytics";
 import { Dashboard } from "./pages/Dashboard";
+import { GuestAnalytics } from "./pages/GuestAnalytics";
 import { GuestDashboard } from "./pages/GuestDashboard";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
@@ -16,6 +17,7 @@ export function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/guest" element={<GuestDashboard />} />
+        <Route path="/guest/analytics/:shortCode" element={<GuestAnalytics />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/analytics" element={<Navigate to="/dashboard" replace />} />

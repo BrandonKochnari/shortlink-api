@@ -21,6 +21,14 @@
       "destination": "/index.html"
     },
     {
+      "source": "/guest",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/guest/(.*)",
+      "destination": "/index.html"
+    },
+    {
       "source": "/:shortCode",
       "destination": "https://shortlink-c8sm.onrender.com/:shortCode"
     },

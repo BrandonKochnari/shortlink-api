@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { API_BASE_URL } from "../api/config";
 
-const APP_ROUTE_PREFIXES = new Set(["analytics", "dashboard", "login", "register"]);
+const APP_ROUTE_PREFIXES = new Set(["analytics", "dashboard", "guest", "login", "register"]);
 
 export function ShortLinkRedirect() {
   const { shortCode } = useParams();

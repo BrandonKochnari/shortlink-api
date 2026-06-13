@@ -26,6 +26,18 @@ export type UrlAnalytics = {
   is_expired: boolean;
 };
 
+export type AnalyticsRange = "1d" | "7d" | "30d" | "90d";
+
+export type AnalyticsPoint = {
+  period_start: string;
+  clicks: number;
+};
+
+export type UrlAnalyticsTimeseries = {
+  range: AnalyticsRange;
+  points: AnalyticsPoint[];
+};
+
 export type UpdateUrlInput = {
   expires_at: string | null;
 };
@@ -119,20 +131,79 @@ export function createShortUrl(token: string, input: CreateUrlInput) {
   });
 }
 
-export function createGuestShortUrl(input: Pick<CreateUrlInput, "original_url">) {
+function guestHeaders(guestToken: string) {
+  return {
+    "X-Guest-Token": guestToken,
+  };
+}
+
+export function fetchGuestUrls(guestToken: string) {
+  return publicRequest<ShortUrl[]>(`/api/v1/urls/guest?_=${Date.now()}`, {
+    headers: guestHeaders(guestToken),
+  });
+}
+
+export function createGuestShortUrlForToken(
+  guestToken: string,
+  input: Pick<CreateUrlInput, "original_url">,
+) {
   return publicRequest<ShortUrl>("/api/v1/urls/guest", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...guestHeaders(guestToken),
     },
     body: JSON.stringify(input),
   });
+}
+
+export function deleteGuestShortUrl(guestToken: string, shortCode: string) {
+  return publicRequest<{ message: string }>(
+    `/api/v1/urls/guest/${encodeURIComponent(shortCode)}`,
+    {
+      method: "DELETE",
+      headers: guestHeaders(guestToken),
+    },
+  );
+}
+
+export function fetchGuestUrlAnalytics(guestToken: string, shortCode: string) {
+  return publicRequest<UrlAnalytics>(
+    `/api/v1/urls/guest/${encodeURIComponent(shortCode)}/analytics`,
+    {
+      headers: guestHeaders(guestToken),
+    },
+  );
 }
 
 export function fetchUrlAnalytics(token: string, shortCode: string) {
   return request<UrlAnalytics>(
     `/api/v1/urls/${encodeURIComponent(shortCode)}/analytics`,
     token,
+  );
+}
+
+export function fetchUrlAnalyticsTimeseries(
+  token: string,
+  shortCode: string,
+  range: AnalyticsRange,
+) {
+  return request<UrlAnalyticsTimeseries>(
+    `/api/v1/urls/${encodeURIComponent(shortCode)}/analytics/timeseries?range=${range}`,
+    token,
+  );
+}
+
+export function fetchGuestUrlAnalyticsTimeseries(
+  guestToken: string,
+  shortCode: string,
+  range: AnalyticsRange,
+) {
+  return publicRequest<UrlAnalyticsTimeseries>(
+    `/api/v1/urls/guest/${encodeURIComponent(shortCode)}/analytics/timeseries?range=${range}`,
+    {
+      headers: guestHeaders(guestToken),
+    },
   );
 }
 

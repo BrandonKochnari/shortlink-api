@@ -49,5 +49,15 @@ class URLAnalytics(BaseModel):
     expires_at: datetime | None = None
     is_expired: bool
 
+
+class URLAnalyticsPoint(BaseModel):
+    period_start: datetime
+    clicks: int
+
+
+class URLAnalyticsTimeseries(BaseModel):
+    range: str
+    points: list[URLAnalyticsPoint]
+
 class URLUpdate(BaseModel):
     expires_at: datetime | None = None

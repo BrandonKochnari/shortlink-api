@@ -86,12 +86,16 @@ def create_url(client: TestClient, headers: dict[str, str], **overrides):
     return client.post("/api/v1/urls/", json=payload, headers=headers)
 
 
-def create_guest_url(client: TestClient, **overrides):
+def guest_headers(token: str = "guest-token-a") -> dict[str, str]:
+    return {"X-Guest-Token": token}
+
+
+def create_guest_url(client: TestClient, token: str = "guest-token-a", **overrides):
     payload = {
         "original_url": "https://example.com",
     }
     payload.update(overrides)
-    return client.post("/api/v1/urls/guest", json=payload)
+    return client.post("/api/v1/urls/guest", json=payload, headers=guest_headers(token))
 
 
 def assert_generated_short_code(short_code: str):
@@ -147,6 +151,7 @@ def test_guest_can_create_short_url_without_auth(client: TestClient):
         url = db.query(URL).filter(URL.short_code == data["short_code"]).first()
         assert url is not None
         assert url.user_id is None
+        assert url.guest_token == "guest-token-a"
     finally:
         db.close()
 
@@ -175,6 +180,59 @@ def test_guest_cannot_access_analytics(client: TestClient):
     assert analytics_response.status_code == 401
 
 
+def test_guest_can_reload_links_with_same_guest_token(client: TestClient):
+    create_response = create_guest_url(client, token="persistent-guest")
+    assert create_response.status_code == 200
+    short_code = created_short_code(create_response)
+
+    list_response = client.get(
+        "/api/v1/urls/guest",
+        headers=guest_headers("persistent-guest"),
+    )
+
+    assert list_response.status_code == 200
+    short_codes = {url["short_code"] for url in list_response.json()}
+    assert short_code in short_codes
+
+
+def test_guest_can_delete_only_own_links(client: TestClient):
+    create_response = create_guest_url(client, token="owner-guest")
+    assert create_response.status_code == 200
+    short_code = created_short_code(create_response)
+
+    other_delete_response = client.delete(
+        f"/api/v1/urls/guest/{short_code}",
+        headers=guest_headers("other-guest"),
+    )
+    owner_delete_response = client.delete(
+        f"/api/v1/urls/guest/{short_code}",
+        headers=guest_headers("owner-guest"),
+    )
+
+    assert other_delete_response.status_code == 404
+    assert owner_delete_response.status_code == 200
+    assert owner_delete_response.json() == {"message": "URL Deleted"}
+
+
+def test_guest_can_view_only_own_analytics(client: TestClient):
+    create_response = create_guest_url(client, token="analytics-owner")
+    assert create_response.status_code == 200
+    short_code = created_short_code(create_response)
+
+    other_analytics_response = client.get(
+        f"/api/v1/urls/guest/{short_code}/analytics",
+        headers=guest_headers("analytics-other"),
+    )
+    owner_analytics_response = client.get(
+        f"/api/v1/urls/guest/{short_code}/analytics",
+        headers=guest_headers("analytics-owner"),
+    )
+
+    assert other_analytics_response.status_code == 404
+    assert owner_analytics_response.status_code == 200
+    assert owner_analytics_response.json()["short_code"] == short_code
+
+
 def test_guest_cannot_activate_or_deactivate_links(client: TestClient):
     create_response = create_guest_url(client)
     assert create_response.status_code == 200
@@ -185,6 +243,26 @@ def test_guest_cannot_activate_or_deactivate_links(client: TestClient):
 
     assert deactivate_response.status_code == 401
     assert activate_response.status_code == 401
+
+
+def test_guest_analytics_timeseries_returns_click_history(client: TestClient):
+    create_response = create_guest_url(client, token="guest-timeseries")
+    assert create_response.status_code == 200
+    short_code = created_short_code(create_response)
+
+    redirect_response = client.get(f"/{short_code}", follow_redirects=False)
+    assert redirect_response.status_code in [307, 308]
+
+    timeseries_response = client.get(
+        f"/api/v1/urls/guest/{short_code}/analytics/timeseries?range=7d",
+        headers=guest_headers("guest-timeseries"),
+    )
+
+    assert timeseries_response.status_code == 200
+    data = timeseries_response.json()
+    assert data["range"] == "7d"
+    assert len(data["points"]) == 7
+    assert sum(point["clicks"] for point in data["points"]) == 1
 
 
 def test_guest_short_urls_do_not_appear_in_authenticated_my_urls(client: TestClient):
@@ -295,6 +373,28 @@ def test_analytics_returns_click_count(client: TestClient):
     assert data["short_code"] == short_code
     assert data["clicks"] == 1
     assert data["last_clicked"] is not None
+
+
+def test_authenticated_analytics_timeseries_returns_click_history(client: TestClient):
+    headers = auth_headers(client)
+
+    create_response = create_url(client, headers)
+    assert create_response.status_code == 200
+    short_code = created_short_code(create_response)
+
+    redirect_response = client.get(f"/{short_code}", follow_redirects=False)
+    assert redirect_response.status_code in [307, 308]
+
+    timeseries_response = client.get(
+        f"/api/v1/urls/{short_code}/analytics/timeseries?range=1d",
+        headers=headers,
+    )
+
+    assert timeseries_response.status_code == 200
+    data = timeseries_response.json()
+    assert data["range"] == "1d"
+    assert len(data["points"]) == 24
+    assert sum(point["clicks"] for point in data["points"]) == 1
 
 
 def test_prefetch_request_does_not_increment_click_count(client: TestClient):
