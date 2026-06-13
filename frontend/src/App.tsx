@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { checkApiHealth } from "./api/health";
 import { AppLayout } from "./components/AppLayout";
@@ -13,20 +13,10 @@ import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { ShortLinkRedirect } from "./pages/ShortLinkRedirect";
 
-const MAX_BOOT_ATTEMPTS = 8;
 const BOOT_RETRY_DELAY_MS = 3000;
 
 export function App() {
   const [isApiReady, setIsApiReady] = useState(false);
-  const [bootAttempt, setBootAttempt] = useState(1);
-  const [bootError, setBootError] = useState<string | null>(null);
-  const [retryNonce, setRetryNonce] = useState(0);
-
-  const retryBoot = useCallback(() => {
-    setBootAttempt(1);
-    setBootError(null);
-    setRetryNonce((value) => value + 1);
-  }, []);
 
   useEffect(() => {
     if (isApiReady) {
@@ -37,10 +27,7 @@ export function App() {
     let timeoutId: number | undefined;
     let isCancelled = false;
 
-    const checkBackend = async (attempt: number) => {
-      setBootAttempt(attempt);
-      setBootError(null);
-
+    const checkBackend = async () => {
       try {
         await checkApiHealth(controller.signal);
         if (!isCancelled) {
@@ -51,18 +38,13 @@ export function App() {
           return;
         }
 
-        if (attempt >= MAX_BOOT_ATTEMPTS) {
-          setBootError("We could not reach the API yet. Give it another try in a moment.");
-          return;
-        }
-
         timeoutId = window.setTimeout(() => {
-          void checkBackend(attempt + 1);
+          void checkBackend();
         }, BOOT_RETRY_DELAY_MS);
       }
     };
 
-    void checkBackend(1);
+    void checkBackend();
 
     return () => {
       isCancelled = true;
@@ -71,17 +53,10 @@ export function App() {
         window.clearTimeout(timeoutId);
       }
     };
-  }, [isApiReady, retryNonce]);
+  }, [isApiReady]);
 
   if (!isApiReady) {
-    return (
-      <BootLoadingScreen
-        attempt={bootAttempt}
-        error={bootError}
-        isRetrying={!bootError}
-        onRetry={retryBoot}
-      />
-    );
+    return <BootLoadingScreen />;
   }
 
   return (
