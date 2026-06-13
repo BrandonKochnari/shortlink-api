@@ -12,6 +12,38 @@ const RANGE_OPTIONS: { value: AnalyticsRange; label: string }[] = [
   { value: "90d", label: "90 days" },
 ];
 
+function getNiceStep(rawStep: number) {
+  if (rawStep <= 1) {
+    return 1;
+  }
+
+  const magnitude = 10 ** Math.floor(Math.log10(rawStep));
+  const normalizedStep = rawStep / magnitude;
+
+  if (normalizedStep <= 1) {
+    return magnitude;
+  }
+
+  if (normalizedStep <= 2) {
+    return 2 * magnitude;
+  }
+
+  if (normalizedStep <= 5) {
+    return 5 * magnitude;
+  }
+
+  return 10 * magnitude;
+}
+
+function getYAxisTicks(maxClicks: number) {
+  const tickCount = 4;
+  const paddedMax = Math.max(1, Math.ceil(maxClicks * 1.15));
+  const step = getNiceStep(paddedMax / (tickCount - 1));
+  const topValue = step * Math.ceil(paddedMax / step);
+
+  return Array.from({ length: tickCount }, (_, index) => topValue - step * index);
+}
+
 type AnalyticsGraphProps = {
   loadTimeseries: (range: AnalyticsRange) => Promise<UrlAnalyticsTimeseries>;
 };
@@ -55,6 +87,8 @@ export function AnalyticsGraph({ loadTimeseries }: AnalyticsGraphProps) {
   );
   const points = timeseries?.points ?? [];
   const hasClicks = maxClicks > 0;
+  const yAxisTicks = useMemo(() => getYAxisTicks(maxClicks), [maxClicks]);
+  const yAxisMax = yAxisTicks[0] || 1;
 
   return (
     <div className="panel panel-body">
@@ -95,22 +129,37 @@ export function AnalyticsGraph({ loadTimeseries }: AnalyticsGraphProps) {
 
       {!isLoading && !error && hasClicks && points.length > 0 && (
         <div className="mt-6">
-          <div className="flex h-56 items-end gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-4">
-            {points.map((point) => {
-              const height = point.clicks === 0 ? "0%" : `${Math.max(8, (point.clicks / maxClicks) * 100)}%`;
-
-              return (
-                <div key={point.period_start} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end">
-                  <div
-                    className="w-full rounded-t bg-mint shadow-sm"
-                    style={{ height }}
-                    title={`${formatDateET(point.period_start)}: ${point.clicks} clicks`}
+          <div className="grid grid-cols-[3rem_minmax(0,1fr)] gap-3">
+            <div className="flex h-56 flex-col justify-between py-4 text-right text-xs font-medium text-slate-500">
+              {yAxisTicks.map((tick) => (
+                <span key={tick}>{tick}</span>
+              ))}
+            </div>
+            <div className="relative flex h-56 items-end gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-4">
+              <div className="pointer-events-none absolute inset-x-3 inset-y-4 flex flex-col justify-between">
+                {yAxisTicks.map((tick) => (
+                  <span
+                    key={tick}
+                    className="border-t border-slate-200 first:border-slate-300"
                   />
-                </div>
-              );
-            })}
+                ))}
+              </div>
+              {points.map((point) => {
+                const height = point.clicks === 0 ? "0%" : `${Math.max(8, (point.clicks / yAxisMax) * 100)}%`;
+
+                return (
+                  <div key={point.period_start} className="relative z-[1] flex h-full min-w-0 flex-1 flex-col items-center justify-end">
+                    <div
+                      className="w-full rounded-t bg-mint shadow-sm"
+                      style={{ height }}
+                      title={`${formatDateET(point.period_start)}: ${point.clicks} clicks`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <div className="mt-3 flex justify-between text-xs text-slate-500">
+          <div className="ml-[calc(3rem+0.75rem)] mt-3 flex justify-between text-xs text-slate-500">
             <span>{formatDateET(points[0]?.period_start)}</span>
             <span>{formatDateET(points[points.length - 1]?.period_start)}</span>
           </div>
