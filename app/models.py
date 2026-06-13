@@ -10,6 +10,7 @@ class URL(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    guest_token = Column(String, index=True, nullable=True)
 
     original_url = Column(String, nullable=False)
     short_code = Column(String, unique=True, index=True, nullable=False)

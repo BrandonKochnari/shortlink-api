@@ -3,6 +3,8 @@ from pydantic import BaseModel, ConfigDict, EmailStr, HttpUrl
 
 
 class URLCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     original_url: HttpUrl
     custom_alias: str | None = None
     expires_at: datetime | None = None
@@ -17,6 +19,7 @@ class URLResponse(BaseModel):
     short_url: str
     expires_at: datetime | None = None
     created_at: datetime
+    is_active: bool
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -46,6 +49,16 @@ class URLAnalytics(BaseModel):
     is_active: bool
     expires_at: datetime | None = None
     is_expired: bool
+
+
+class URLAnalyticsPoint(BaseModel):
+    period_start: datetime
+    clicks: int
+
+
+class URLAnalyticsTimeseries(BaseModel):
+    range: str
+    points: list[URLAnalyticsPoint]
 
 class URLUpdate(BaseModel):
     expires_at: datetime | None = None
