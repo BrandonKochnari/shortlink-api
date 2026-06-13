@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError
 from sqlalchemy.orm import Session
@@ -9,13 +9,14 @@ from app.services.security import (
     hash_password,
     verify_password,
     create_access_token,
-    decode_access_token
+    decode_access_token,
 )
 from app.schemas import (
     UserCreate,
     UserResponse,
-    Token
+    Token,
 )
+from app.utils.rate_limit import limiter
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/api/v1/auth/login"
@@ -23,12 +24,13 @@ oauth2_scheme = OAuth2PasswordBearer(
 
 router = APIRouter()
 
-@router.post(
-        "/register",
-        response_model=UserResponse
-)
 
-def register(user_data: UserCreate, db: Session = Depends(get_db)):
+@router.post(
+    "/register",
+    response_model=UserResponse,
+)
+@limiter.limit("3/minute")
+def register(request: Request, user_data: UserCreate, db: Session = Depends(get_db)):
     existing_user = (
         db.query(User)
         .filter(User.email == user_data.email)
@@ -37,24 +39,26 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     if existing_user:
         raise HTTPException(
             status_code=400,
-            detail="Email Already Registered"
+            detail="Email Already Registered",
         )
-    hashed_password = hash_password(user_data.password)
+
     user = User(
         email=user_data.email,
-        hashed_password=hashed_password
+        hashed_password=hash_password(user_data.password),
     )
     db.add(user)
     db.commit()
     db.refresh(user)
     return user
 
+
 @router.post(
     "/login",
-    response_model=Token
+    response_model=Token,
 )
-
+@limiter.limit("5/minute")
 def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
@@ -66,19 +70,20 @@ def login(
     if not user:
         raise HTTPException(
             status_code=401,
-            detail="Invalid Email or Password"
+            detail="Invalid Email or Password",
         )
     if not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=401,
-            detail="Invalid Email or Password"
+            detail="Invalid Email or Password",
         )
-    
+
     access_token = create_access_token({"sub": str(user.id)})
     return {
         "access_token": access_token,
-        "token_type": "bearer"
+        "token_type": "bearer",
     }
+
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     try:
@@ -87,13 +92,13 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     except JWTError:
         raise HTTPException(
             status_code=401,
-            detail="Invalid Token"
+            detail="Invalid Token",
         )
 
     if user_id is None:
         raise HTTPException(
             status_code=401,
-            detail="Invalid Token"
+            detail="Invalid Token",
         )
     user = (
         db.query(User)
@@ -103,14 +108,14 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if not user:
         raise HTTPException(
             status_code=401,
-            detail="User Not Found"
+            detail="User Not Found",
         )
     return user
 
+
 @router.get(
     "/me",
-    response_model = UserResponse
+    response_model=UserResponse,
 )
-
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
