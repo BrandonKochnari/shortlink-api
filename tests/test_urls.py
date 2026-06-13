@@ -319,7 +319,7 @@ def test_logged_in_user_can_create_custom_short_code(client: TestClient):
 
     data = response.json()
     assert data["short_code"] == requested_alias
-    assert data["short_url"].endswith(data["short_code"])
+    assert data["short_url"].endswith(f"/{requested_alias}")
 
 
 def test_duplicate_custom_short_code_returns_clear_error(client: TestClient):
