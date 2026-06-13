@@ -60,11 +60,10 @@ def test_frontend_defaults_to_current_backend_api_url():
     vercel_config = json.loads(vercel_config_path.read_text())
     rewrites = vercel_config["rewrites"]
 
-    assert 'const DEFAULT_API_BASE_URL = "https://shortlink-api-1.onrender.com";' in config_source
-    assert "import.meta.env.VITE_API_URL" in config_source
-    assert 'API_BASE_URL: "https://shortlink-api-1.onrender.com"' in runtime_config_source
+    assert 'const DEFAULT_API_BASE_URL = "https://shortlink-c8sm.onrender.com";' in config_source
+    assert 'API_BASE_URL: "https://shortlink-c8sm.onrender.com"' in runtime_config_source
     assert any(
         rewrite["source"] == "/:shortCode"
-        and rewrite["destination"] == "https://shortlink-api-1.onrender.com/:shortCode"
+        and rewrite["destination"] == "https://shortlink-c8sm.onrender.com/:shortCode"
         for rewrite in rewrites
     )

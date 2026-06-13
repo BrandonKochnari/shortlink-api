@@ -5,8 +5,8 @@ Shortlink is a full-stack URL shortener with authenticated link management, clic
 ## Live Application
 
 - Frontend: [https://urlshortlink.xyz/dashboard](https://urlshortlink.xyz/dashboard)
-- Backend API: [https://shortlink-api-1.onrender.com](https://shortlink-api-1.onrender.com)
-- API docs: [https://shortlink-api-1.onrender.com/docs](https://shortlink-api-1.onrender.com/docs)
+- Backend API: [https://shortlink-c8sm.onrender.com](https://shortlink-c8sm.onrender.com)
+- API docs: [https://shortlink-c8sm.onrender.com/docs](https://shortlink-c8sm.onrender.com/docs)
 
 ## Overview
 
@@ -341,7 +341,7 @@ The `scripts/` folder includes local convenience scripts such as:
 ## Deployment Notes
 
 - The production frontend runs on [https://urlshortlink.xyz](https://urlshortlink.xyz).
-- The production backend runs on [https://shortlink-api-1.onrender.com](https://shortlink-api-1.onrender.com).
+- The production backend runs on [https://shortlink-c8sm.onrender.com](https://shortlink-c8sm.onrender.com).
 - The frontend defaults, runtime config, Docker config, and backend CORS settings are aligned to the current production URLs.
 
 ## Authors

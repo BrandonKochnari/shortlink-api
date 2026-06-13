@@ -30,7 +30,7 @@
     },
     {
       "source": "/:shortCode",
-      "destination": "https://shortlink-api-1.onrender.com/:shortCode"
+      "destination": "https://shortlink-c8sm.onrender.com/:shortCode"
     },
     {
       "source": "/(.*)",

@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE_URL = "https://shortlink-api-1.onrender.com";
+const DEFAULT_API_BASE_URL = "https://shortlink-c8sm.onrender.com";
 const LOCAL_API_BASE_URL = "http://127.0.0.1:8000";
 
 declare global {
