@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE_URL = "https://shortlink-c8sm.onrender.com";
+const DEFAULT_API_BASE_URL = "https://shortlink-api-1.onrender.com";
 
 declare global {
   interface Window {
@@ -15,4 +15,5 @@ function normalizeBaseUrl(value: string | undefined) {
 export const API_BASE_URL =
   normalizeBaseUrl(window.__SHORTLINK_CONFIG__?.API_BASE_URL) ||
   normalizeBaseUrl(import.meta.env.VITE_API_BASE_URL) ||
+  normalizeBaseUrl(import.meta.env.VITE_API_URL) ||
   DEFAULT_API_BASE_URL;

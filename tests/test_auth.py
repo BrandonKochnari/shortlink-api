@@ -78,6 +78,20 @@ def test_health_endpoint_returns_ok(client: TestClient):
     assert response.json() == {"status": "ok"}
 
 
+def test_cors_allows_vercel_frontend_origins(client: TestClient):
+    response = client.options(
+        "/api/v1/auth/login",
+        headers={
+            "Origin": "https://url-shortlink.vercel.app",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "https://url-shortlink.vercel.app"
+
+
 def test_duplicate_register_rejected(client: TestClient):
     email = unique_email()
     payload = {"email": email, "password": "password123"}

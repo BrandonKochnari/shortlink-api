@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { checkApiHealth } from "./api/health";
 import { AppLayout } from "./components/AppLayout";
-import { BootLoadingScreen } from "./components/BootLoadingScreen";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./auth/AuthContext";
 import { Analytics } from "./pages/Analytics";
@@ -13,12 +12,8 @@ import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { ShortLinkRedirect } from "./pages/ShortLinkRedirect";
 
-const MAX_BOOT_WAIT_MS = 15000;
-const BOOT_RETRY_DELAY_MS = 3000;
-
 export function App() {
   const [isApiReady, setIsApiReady] = useState(false);
-  const [showWarmupNotice, setShowWarmupNotice] = useState(true);
 
   useEffect(() => {
     if (isApiReady) {
@@ -26,30 +21,16 @@ export function App() {
     }
 
     const controller = new AbortController();
-    let timeoutId: number | undefined;
     let isCancelled = false;
-    const startedAt = Date.now();
 
     const checkBackend = async () => {
       try {
         await checkApiHealth(controller.signal);
         if (!isCancelled) {
           setIsApiReady(true);
-          setShowWarmupNotice(false);
         }
       } catch {
-        if (isCancelled) {
-          return;
-        }
-
-        if (Date.now() - startedAt >= MAX_BOOT_WAIT_MS) {
-          setShowWarmupNotice(false);
-          return;
-        }
-
-        timeoutId = window.setTimeout(() => {
-          void checkBackend();
-        }, BOOT_RETRY_DELAY_MS);
+        // Route-level API calls handle their own loading and error states.
       }
     };
 
@@ -58,9 +39,6 @@ export function App() {
     return () => {
       isCancelled = true;
       controller.abort();
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
     };
   }, [isApiReady]);
 
@@ -81,7 +59,6 @@ export function App() {
           <Route path="/:shortCode" element={<ShortLinkRedirect />} />
         </Route>
       </Routes>
-      {!isApiReady && showWarmupNotice && <BootLoadingScreen />}
     </AuthProvider>
   );
 }
