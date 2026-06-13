@@ -53,6 +53,7 @@ export function AnalyticsGraph({ loadTimeseries }: AnalyticsGraphProps) {
     () => Math.max(0, ...(timeseries?.points.map((point) => point.clicks) ?? [])),
     [timeseries],
   );
+  const points = timeseries?.points ?? [];
   const hasClicks = maxClicks > 0;
 
   return (
@@ -92,10 +93,10 @@ export function AnalyticsGraph({ loadTimeseries }: AnalyticsGraphProps) {
         </div>
       )}
 
-      {!isLoading && !error && hasClicks && timeseries && (
+      {!isLoading && !error && hasClicks && points.length > 0 && (
         <div className="mt-6">
           <div className="flex h-56 items-end gap-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-4">
-            {timeseries.points.map((point) => {
+            {points.map((point) => {
               const height = `${Math.max(8, (point.clicks / maxClicks) * 100)}%`;
 
               return (
@@ -110,8 +111,8 @@ export function AnalyticsGraph({ loadTimeseries }: AnalyticsGraphProps) {
             })}
           </div>
           <div className="mt-3 flex justify-between text-xs text-slate-500">
-            <span>{formatDateET(timeseries.points[0]?.period_start)}</span>
-            <span>{formatDateET(timeseries.points[timeseries.points.length - 1]?.period_start)}</span>
+            <span>{formatDateET(points[0]?.period_start)}</span>
+            <span>{formatDateET(points[points.length - 1]?.period_start)}</span>
           </div>
         </div>
       )}

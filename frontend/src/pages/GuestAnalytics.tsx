@@ -91,7 +91,7 @@ export function GuestAnalytics() {
           <p className="page-copy">Review traffic and status details for this guest short URL.</p>
         </div>
         <Link className="btn-secondary" to="/guest">
-          Back to guest dashboard
+          Back to dashboard
         </Link>
       </div>
 

@@ -185,21 +185,21 @@ export function GuestDashboard() {
   };
 
   return (
-    <section className="-mt-3 space-y-4">
-      <div className="page-header">
-        <div>
-          <p className="eyebrow">Guest dashboard</p>
-          <h1 className="page-title">Manage guest links</h1>
-          <p className="page-copy">
-            Guest links expire after 7 days. Sign in to create custom links, choose your own expiration, keep links forever, and activate or deactivate links later.
-          </p>
-        </div>
-        <Link className="btn-secondary self-start" to="/login">
-          Sign in
-        </Link>
-      </div>
-
+    <section className="-mt-3">
       <div className="mx-auto w-full max-w-5xl space-y-5">
+        <div className="page-header">
+          <div>
+            <p className="eyebrow">Guest dashboard</p>
+            <h1 className="page-title">Manage guest links</h1>
+            <p className="page-copy">
+              Guest links expire after 7 days. Sign in to create custom links, choose your own expiration, keep links forever, and activate or deactivate links later.
+            </p>
+          </div>
+          <Link className="btn-secondary self-start" to="/login">
+            Sign in
+          </Link>
+        </div>
+
         <div className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
           <form className="panel panel-body flex h-full flex-col" onSubmit={handleCreate}>
             <div>

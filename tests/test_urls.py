@@ -245,7 +245,16 @@ def test_guest_cannot_activate_or_deactivate_links(client: TestClient):
     assert activate_response.status_code == 401
 
 
-def test_guest_analytics_timeseries_returns_click_history(client: TestClient):
+@pytest.mark.parametrize(
+    ("range_key", "expected_points"),
+    [
+        ("1d", 24),
+        ("7d", 7),
+        ("30d", 30),
+        ("90d", 90),
+    ],
+)
+def test_guest_analytics_timeseries_returns_click_history(client: TestClient, range_key: str, expected_points: int):
     create_response = create_guest_url(client, token="guest-timeseries")
     assert create_response.status_code == 200
     short_code = created_short_code(create_response)
@@ -254,14 +263,14 @@ def test_guest_analytics_timeseries_returns_click_history(client: TestClient):
     assert redirect_response.status_code in [307, 308]
 
     timeseries_response = client.get(
-        f"/api/v1/urls/guest/{short_code}/analytics/timeseries?range=7d",
+        f"/api/v1/urls/guest/{short_code}/analytics/timeseries?range={range_key}",
         headers=guest_headers("guest-timeseries"),
     )
 
     assert timeseries_response.status_code == 200
     data = timeseries_response.json()
-    assert data["range"] == "7d"
-    assert len(data["points"]) == 7
+    assert data["range"] == range_key
+    assert len(data["points"]) == expected_points
     assert sum(point["clicks"] for point in data["points"]) == 1
 
 
@@ -375,7 +384,16 @@ def test_analytics_returns_click_count(client: TestClient):
     assert data["last_clicked"] is not None
 
 
-def test_authenticated_analytics_timeseries_returns_click_history(client: TestClient):
+@pytest.mark.parametrize(
+    ("range_key", "expected_points"),
+    [
+        ("1d", 24),
+        ("7d", 7),
+        ("30d", 30),
+        ("90d", 90),
+    ],
+)
+def test_authenticated_analytics_timeseries_returns_click_history(client: TestClient, range_key: str, expected_points: int):
     headers = auth_headers(client)
 
     create_response = create_url(client, headers)
@@ -386,14 +404,14 @@ def test_authenticated_analytics_timeseries_returns_click_history(client: TestCl
     assert redirect_response.status_code in [307, 308]
 
     timeseries_response = client.get(
-        f"/api/v1/urls/{short_code}/analytics/timeseries?range=1d",
+        f"/api/v1/urls/{short_code}/analytics/timeseries?range={range_key}",
         headers=headers,
     )
 
     assert timeseries_response.status_code == 200
     data = timeseries_response.json()
-    assert data["range"] == "1d"
-    assert len(data["points"]) == 24
+    assert data["range"] == range_key
+    assert len(data["points"]) == expected_points
     assert sum(point["clicks"] for point in data["points"]) == 1
 
 
